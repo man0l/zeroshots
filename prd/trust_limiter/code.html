@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trust Limiter - Cyber-Kinetic UI</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#38BDF8", // Sky Blue per request
+              "background-navy": "#070B14", // Deep immersive navy
+              "slate-border": "#334155", // Slate border color
+              "cyan-glow": "#06B6D4",
+              "purple-glow": "#A855F7",
+            },
+            fontFamily: {
+              "display": ["Space Grotesk", "sans-serif"],
+              "body": ["Inter", "sans-serif"],
+            },
+          },
+        },
+      }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .glass-modal {
+                background: rgba(15, 23, 42, 0.6);
+                backdrop-filter: blur(40px) saturate(180%);
+                -webkit-backdrop-filter: blur(40px) saturate(180%);
+                border: 1px solid theme('colors.slate.700');
+            }
+            .glow-sky {
+                filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.8));
+            }
+            .inner-neon-glow {
+                box-shadow: inset 0 0 12px rgba(255, 255, 255, 0.3);
+            }
+            .upgrade-gradient {
+                background: linear-gradient(135deg, #06B6D4 0%, #8B5CF6 100%);
+            }
+            .progress-ring-circle {
+                transition: stroke-dashoffset 0.35s;
+                transform: rotate(-90deg);
+                transform-origin: 50% 50%;
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-navy text-white font-body h-screen w-full overflow-hidden relative">
+<div class="absolute inset-0 z-0 flex flex-col items-center justify-center opacity-30 pointer-events-none filter blur-sm">
+<div class="w-[90%] max-w-md aspect-[3/4] bg-slate-800 rounded-[2.5rem] relative overflow-hidden border border-white/5 transform scale-95 translate-y-4">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80 z-10"></div>
+<img alt="Background content" class="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCgHj5ZKxIMdEijEC9khYYEZ7yzgRt6jXya8mDiyEPUqtIPLtRgmSHzwWxnU0ke6QV_apgxTFRs1rH81J0AlcStVOXO4fHabaiDHdCKbG9tFGkTH6LdeEUW3O3WZJ9a5IqAfzewCH6DEUHuKzDrMz1Vi96xGJoXsikavG2vxeYBtaCtunP4PIH5eOSMf0X-NdmQddeu76K23cXfiDKg2MPmlUND3bDIL5J76yiXach5f4K-8GOam0wO6LjWUS_4cdv0SWauZm78HY1b"/>
+</div>
+</div>
+<div class="fixed inset-0 z-50 flex flex-col justify-end items-center">
+<div class="absolute inset-0 bg-[#070B14]/90 transition-opacity duration-300"></div>
+<div class="relative w-full max-w-md h-auto glass-modal rounded-t-[3rem] p-8 flex flex-col items-center border-t border-slate-700/50 shadow-2xl">
+<div class="w-10 h-1 bg-slate-600/40 rounded-full mb-10"></div>
+<div class="flex-1 flex flex-col items-center w-full">
+<div class="relative w-32 h-32 flex items-center justify-center mb-8">
+<div class="absolute inset-0 rounded-full bg-primary/20 blur-2xl"></div>
+<svg class="w-32 h-32 glow-sky" viewBox="0 0 100 100">
+<circle class="text-slate-800" cx="50" cy="50" fill="transparent" r="44" stroke="currentColor" stroke-width="5"></circle>
+<circle class="text-primary progress-ring-circle" cx="50" cy="50" fill="transparent" r="44" stroke="currentColor" stroke-dasharray="276.46" stroke-dashoffset="0" stroke-linecap="round" stroke-width="5"></circle>
+</svg>
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="w-20 h-20 bg-[#0F172A]/80 rounded-full flex items-center justify-center border border-primary/30 glow-sky">
+<span class="material-symbols-outlined text-primary text-4xl" style="font-variation-settings: 'FILL' 1;">
+                            lock
+                        </span>
+</div>
+</div>
+<div class="absolute -bottom-1 bg-primary text-[#070B14] text-[10px] font-display font-black px-2.5 py-0.5 rounded-full tracking-tighter uppercase shadow-[0_0_15px_rgba(56,189,248,0.5)]">
+                    Capacity Full
+                </div>
+</div>
+<div class="text-center space-y-4 px-6 mb-10">
+<h2 class="font-display font-bold text-3xl tracking-tight text-white leading-none">
+                    Trust Capacity <br/>
+<span class="text-primary drop-shadow-[0_0_8px_rgba(56,189,248,0.4)]">Reached</span>
+</h2>
+<p class="text-slate-400 text-[15px] leading-relaxed max-w-[280px] mx-auto">
+                    The Trust-First model limits free accounts to 15 deletes per session to prevent accidental data loss.
+                </p>
+</div>
+<div class="w-full space-y-5 px-2">
+<button class="group relative w-full h-16 rounded-3xl overflow-hidden upgrade-gradient inner-neon-glow transition-all active:scale-[0.97] shadow-[0_10px_30px_rgba(139,92,246,0.3)]">
+<div class="relative flex items-center justify-between px-8 h-full w-full">
+<div class="flex items-center space-x-4">
+<span class="material-symbols-outlined text-white text-2xl">bolt</span>
+<span class="font-display font-bold text-white tracking-tight text-xl">Unlock Unlimited</span>
+</div>
+<div class="bg-white/20 backdrop-blur-md px-3 py-1 rounded-xl">
+<span class="font-display font-bold text-white text-sm">$4.99</span>
+</div>
+</div>
+</button>
+<button class="w-full py-2 text-slate-500 hover:text-slate-300 transition-colors text-sm font-medium flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-lg">schedule</span>
+                    Wait 24h for next session
+                </button>
+</div>
+</div>
+<div class="h-10 w-full"></div>
+</div>
+</div>
+
+</body></html>

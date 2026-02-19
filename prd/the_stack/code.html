@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Stack - Cyber-Kinetic UI</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&amp;family=JetBrains+Mono&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bg-deep": "#0F172A",
+                        "surface-slate": "#1E293B",
+                        "delete": "#EF4444",
+                        "keep": "#10B981",
+                        "archive": "#8B5CF6",
+                        "accent-sky": "#38BDF8",
+                        "text-primary": "#F1F5F9",
+                        "text-muted": "#94A3B8",
+                    },
+                    fontFamily: {
+                        "display": ["'Space Grotesk'", "sans-serif"],
+                        "body": ["'Inter'", "sans-serif"],
+                        "mono": ["'JetBrains Mono'", "monospace"],
+                    },
+                    borderRadius: {
+                        "card": "24px",
+                    },
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer utilities {
+            .glass-morphism {
+                background: rgba(30, 41, 59, 0.4);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            .neon-glow-red {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.3), inset 0 0 8px rgba(239, 68, 68, 0.2);
+            }
+            .neon-glow-green {
+                box-shadow: 0 0 15px rgba(16, 185, 129, 0.3), inset 0 0 8px rgba(16, 185, 129, 0.2);
+            }
+            .neon-glow-sky {
+                box-shadow: 0 0 15px rgba(56, 189, 248, 0.3), inset 0 0 8px rgba(56, 189, 248, 0.2);
+            }
+            .neon-glow-purple {
+                box-shadow: 0 0 15px rgba(139, 92, 246, 0.3), inset 0 0 8px rgba(139, 92, 246, 0.2);
+            }
+            .card-overlay-gradient {
+                background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 40%, transparent 100%);
+            }
+            .inner-light {
+                box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            }
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-bg-deep text-text-primary font-body antialiased h-screen w-full overflow-hidden flex flex-col">
+<div class="fixed top-0 left-1/2 -translate-x-1/2 w-full h-[300px] bg-accent-sky/5 blur-[120px] pointer-events-none"></div>
+<header class="relative z-30 flex items-center justify-between px-6 pt-6 pb-4 w-full max-w-md mx-auto">
+<div class="glass-morphism h-12 px-4 rounded-full flex items-center gap-3 inner-light">
+<div class="flex flex-col">
+<span class="text-[9px] uppercase tracking-[0.15em] text-text-muted font-bold">Daily Trust</span>
+<div class="flex items-center gap-2">
+<span class="font-display font-bold text-base text-accent-sky leading-none">4/15</span>
+<div class="w-16 h-1.5 bg-bg-deep/60 rounded-full overflow-hidden border border-white/5">
+<div class="h-full bg-accent-sky w-[26%] rounded-full shadow-[0_0_10px_rgba(56,189,248,0.8)]"></div>
+</div>
+</div>
+</div>
+</div>
+<button class="glass-morphism w-12 h-12 rounded-full flex items-center justify-center text-text-muted hover:text-accent-sky transition-all active:scale-90 inner-light">
+<span class="material-symbols-outlined text-[24px]">grid_view</span>
+</button>
+</header>
+<main class="relative z-20 flex-1 flex flex-col items-center justify-center px-4 w-full max-w-md mx-auto">
+<div class="relative w-full aspect-[3/4.5] max-h-[65vh]">
+<div class="absolute inset-x-4 -bottom-4 h-full glass-morphism rounded-card opacity-20 scale-[0.92] translate-y-2"></div>
+<div class="absolute inset-x-2 -bottom-2 h-full glass-morphism rounded-card opacity-40 scale-[0.96] translate-y-1"></div>
+<div class="absolute inset-0 bg-surface-slate rounded-card overflow-hidden border border-white/10 shadow-2xl flex flex-col">
+<img alt="Screenshot content" class="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALN3cmHCNickR5cDrKlfofFxm844-bFtuE2Mdkx8nHNzvam5ROcXHxMB9M3bUSPHvnVe7Hy1qswTlaQK1UOqwV9D1us2raEeV5OwZ8fm6J5_7ceHJgvTW4--VNt_bqtDpng7DV5HGmWFKsIOHnK9m0QwyiDUk0oaw7zDQLYpyG4dzKj7mungmGG7_x_XljP0ala6aCVwa8OPNg9FLF0PAaI3zrGakwYEU4dPIK6kIWx_FOfv6r7WVJsqcWjJFalj3e4jcnYuryCacI"/>
+<div class="absolute top-5 right-5 flex flex-col gap-2 items-end">
+<div class="glass-morphism px-3 py-1.5 rounded-lg text-[10px] font-bold tracking-widest uppercase text-white shadow-xl">
+<span class="text-accent-sky mr-1">#</span>RECEIPT
+                    </div>
+</div>
+<div class="absolute inset-x-0 bottom-0 h-1/2 card-overlay-gradient pointer-events-none"></div>
+<div class="absolute bottom-8 left-8 right-8 z-10">
+<div class="flex items-baseline gap-2 mb-3">
+<h2 class="font-display font-bold text-5xl text-delete drop-shadow-[0_0_10px_rgba(239,68,68,0.4)]">420d</h2>
+<span class="text-xs font-display text-text-muted uppercase tracking-widest font-bold">old</span>
+</div>
+<div class="flex flex-wrap items-center gap-3">
+<div class="glass-morphism px-2.5 py-1.5 rounded-md flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-accent-sky">database</span>
+<span class="font-mono text-[11px] text-white/90">2.8 MB</span>
+</div>
+<div class="glass-morphism px-2.5 py-1.5 rounded-md flex items-center gap-2">
+<span class="material-symbols-outlined text-[14px] text-accent-sky">image</span>
+<span class="font-mono text-[11px] text-white/90">PNG</span>
+</div>
+<div class="font-mono text-[10px] text-text-muted ml-auto">1125 × 2436</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<footer class="relative z-30 w-full max-w-md mx-auto px-8 pb-12 pt-6">
+<div class="flex items-center justify-between gap-6">
+<button class="group flex-1 aspect-square max-w-[80px] rounded-full glass-morphism flex items-center justify-center border-delete/30 text-delete hover:bg-delete/10 transition-all active:scale-95 neon-glow-red">
+<span class="material-symbols-outlined text-[32px] font-light">close</span>
+</button>
+<button class="group w-14 h-14 rounded-full glass-morphism flex items-center justify-center border-archive/30 text-archive hover:bg-archive/10 transition-all active:scale-95 neon-glow-purple">
+<span class="material-symbols-outlined text-[24px] font-light">unarchive</span>
+</button>
+<button class="group flex-1 aspect-square max-w-[80px] rounded-full glass-morphism flex items-center justify-center border-keep/30 text-keep hover:bg-keep/10 transition-all active:scale-95 neon-glow-green">
+<span class="material-symbols-outlined text-[32px] font-light">done_all</span>
+</button>
+</div>
+<div class="mt-8 flex justify-between items-center opacity-30 px-2">
+<span class="text-[9px] font-bold uppercase tracking-[0.2em] text-delete">Swipe Left to Kill</span>
+<div class="h-px flex-1 mx-4 bg-gradient-to-r from-delete/50 via-white/20 to-keep/50"></div>
+<span class="text-[9px] font-bold uppercase tracking-[0.2em] text-keep">Swipe Right to Keep</span>
+</div>
+</footer>
+<nav class="w-full glass-morphism border-t border-white/5 py-4 pb-8 flex justify-around items-center z-40">
+<a class="text-accent-sky flex flex-col items-center gap-1 drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]" href="#">
+<span class="material-symbols-outlined font-variation-fill">layers</span>
+</a>
+<a class="text-text-muted hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">auto_awesome_motion</span>
+</a>
+<a class="text-text-muted hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">monitoring</span>
+</a>
+<a class="text-text-muted hover:text-white transition-colors" href="#">
+<span class="material-symbols-outlined">settings</span>
+</a>
+</nav>
+
+</body></html>

@@ -1,0 +1,50 @@
+# Dependencies
+node_modules/
+
+# Environment files - NEVER commit secrets
+.env
+.env.*
+!.env.example
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# Debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+
+# TypeScript
+*.tsbuildinfo
+
+# Generated native folders
+screenshot-organizer/ios/
+screenshot-organizer/android/
+
+# Playwright test results
+web-demo/test-results/
+web-demo/playwright-report/
+
+# Supabase volumes (local DB data - not for version control)
+supabase/volumes/
+
+# Build artifacts
+*.pem

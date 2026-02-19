@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm start)",
+      "Bash(docker logs:*)",
+      "Bash(docker compose:*)",
+      "Bash(docker ps:*)",
+      "Bash(docker exec:*)",
+      "Bash(docker restart:*)",
+      "Bash(sudo rm:*)",
+      "Bash(curl:*)",
+      "Bash(docker run --rm -v /home/manol/Projects/zeroshots/supabase/volumes/db/data:/data alpine rm -rf /data/*)",
+      "Bash(docker run --rm -v /home/manol/Projects/zeroshots/supabase/volumes/db/data:/data alpine sh -c \"rm -rf /data/* /data/.[!.]*\")",
+      "Bash(docker run:*)",
+      "Bash(docker stop:*)",
+      "Bash(npx expo install:*)",
+      "Bash(python3:*)"
+    ]
+  }
+}

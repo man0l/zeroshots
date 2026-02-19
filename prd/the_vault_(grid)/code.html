@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>The Vault - Cyber-Kinetic UI</title>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary-bg": "#0F172A", // Deep Navy
+                        "surface": "#1E293B", // Slate-800
+                        "surface-highlight": "#334155",
+                        "delete-red": "#EF4444",
+                        "accent-sky": "#38BDF8",
+                        "text-main": "#F1F5F9",
+                        "muted": "#94A3B8",
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                        "mono": ["JetBrains Mono", "monospace"],
+                    },
+                    boxShadow: {
+                        "glow-delete": "0 0 25px rgba(239, 68, 68, 0.6)",
+                        "glow-sky": "0 0 15px rgba(56, 189, 248, 0.4)",
+                    }
+                },
+            },
+        }
+    </script>
+<style type="text/tailwindcss">
+        @layer base {
+            body {
+                @apply bg-primary-bg text-text-main font-body selection:bg-accent-sky selection:text-primary-bg;
+            }
+        }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .glass-badge {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="h-screen overflow-hidden flex flex-col">
+<header class="flex-none pt-6 px-4 pb-2 z-20 bg-primary-bg/95 backdrop-blur-xl sticky top-0">
+<div class="flex items-center justify-between mb-6">
+<button class="flex items-center justify-center w-10 h-10 rounded-full hover:bg-surface-highlight transition-colors text-muted">
+<span class="material-symbols-outlined" style="font-size: 24px;">arrow_back_ios_new</span>
+</button>
+<h1 class="text-xl font-display font-bold tracking-tight text-center uppercase tracking-[0.1em]">Library</h1>
+<button class="w-10 h-10 flex items-center justify-center text-muted">
+<span class="material-symbols-outlined">more_horiz</span>
+</button>
+</div>
+<div class="flex gap-2 overflow-x-auto no-scrollbar pb-4">
+<button class="shrink-0 px-5 py-2 rounded-full bg-accent-sky text-primary-bg font-display font-bold text-xs uppercase tracking-wider shadow-glow-sky">
+            All Items
+        </button>
+<button class="shrink-0 px-5 py-2 rounded-full bg-surface border border-white/5 text-muted font-display font-semibold text-xs uppercase tracking-wider hover:border-accent-sky/50 transition-all">
+            Screenshots
+        </button>
+<button class="shrink-0 px-5 py-2 rounded-full bg-surface border border-white/5 text-muted font-display font-semibold text-xs uppercase tracking-wider hover:border-accent-sky/50 transition-all">
+            Oldest
+        </button>
+<button class="shrink-0 px-5 py-2 rounded-full bg-surface border border-white/5 text-muted font-display font-semibold text-xs uppercase tracking-wider hover:border-accent-sky/50 transition-all">
+            Largest
+        </button>
+</div>
+</header>
+<main class="flex-1 overflow-y-auto px-0.5 pb-40">
+<div class="grid grid-cols-3 gap-px bg-white/5 border-y border-white/5">
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAlUCyfX6F5W4kpkjPZo7LajO0zfErdTPJX5RfV3uHsIGRd4qQ6RVxfQJ3JjEUM3X2hHi5wClUSJKChR4PPplBqeRyt_nVgSnE0HmMZ6WZW9tkkBghPGk3uXSFDLG3cUW1yCpq0Bxu3S0uHCgBVKa4ncF8jt6PgLBEwfJqjWs_2_SGQsWGle8Wug3Rx1P9fJ7gChBi84x4N3tGkGV_tj6u0GzLcqdVAuUX3x-qvohsCTCs0yZE6Snt7ZJXv2u1cHTHIFuxB3_7pxWsg"/>
+<div class="absolute inset-0 bg-delete-red/10 border-2 border-delete-red/50"></div>
+<div class="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-delete-red flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white font-black" style="font-size: 14px;">check</span>
+</div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                2.4MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuArtuWs8tPwWZU5TM9k3xGYzncZLIjmkq4rftnvVWM3vRRE7MKg6D7NS-3nk_6Mak-KEJtHkcxCSHOI6Y90mMoneA0qwJre3QGOQePF7FYCoimDi2sZU8nFphh3kKyt9xjKIwx0Ski--xRXQ8Jkc20XYvDienaJOxeISQidjHSCSarWB8IDZ9jZruTLaPvsytY0ClO_EWy3icWmfD86pkw6GDAsdjM9U8KLcZGDyc8odcpQzItUuLRrusDxzqqTs094E8AxdrK5Aw_b"/>
+<div class="absolute inset-0 bg-delete-red/10 border-2 border-delete-red/50"></div>
+<div class="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-delete-red flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white font-black" style="font-size: 14px;">check</span>
+</div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                5.1MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC0mWOfx07UJIy5kCP8_lqYs5y5Vg36ZSxS8wnOVSv7yAQwhSgrZW1PiG2e6LkwJCth1houU1PP6gHTO-PMz-Va0l-ASiw_TtIp8lingrs5ukESczOh5fGJF1JUQNHAIUEOcc_mBkOcv_o1E_kTKtg0ATi1iQEyHeg49q2iQIch9y3rWPh_6Ui175XTQPXy_G2UhooFhpWpMH55EZnEocQ5zdxsKdoGRfxebB-vtwZ99WoR7akDkn83iFzPz-rEdnqN8CstukPdzrKJ"/>
+<div class="absolute inset-0 bg-delete-red/10 border-2 border-delete-red/50"></div>
+<div class="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-delete-red flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white font-black" style="font-size: 14px;">check</span>
+</div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                12.8MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-90 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBsl39qz0G2UBG0iKKkDEcHCffTO4ihgVvFslj91Y-HvmGmi8c74_pa7QsmSSBCNzF3I6pyrHCVQR8nqbnEtnWqUWsjGW-DlnZrkRhY3dkGDjGlR38_FMkq3kkLsHsM-bj0hTzjfFijTlxMumOsVnw2hvbvEtDSzaSWR-lHFLveuq-L5KgKvOs2PSzqB8b3gaFyyl8Pjicy3T88T1tOCWJ6DXAxadFJPYCZy1E5RjkUXYxjVuLEAr1Bi6IRKynLCKbAUXmKSY6riMzy"/>
+<div class="absolute top-2 right-2 z-20 w-5 h-5 rounded-full border border-white/30 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                1.2MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-90 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD1lUkA2AN5JHCiXgDdCgNOagOACQCMFxCTB4bABQMjW4LZW57sOq1A-1o9Pe79m-wb0cLxm09wpD-op1NYlJW5l7LcQGsQIuJa9KpAnaco1_Sza0AHoBS3VM9-vzDATLWpygtGDAvVT2px7tseYU8LAOJHEv6bX5v3pUzpS_oe5ba6uRAcOBrh8xhoX7WIZaXMnKME2fE-_2k0XAUOVqXaQ7f1kQIgFZrAfRiRetHG6TuEHtN7SDRz4n_8PFS03NPP3PqTEFmp2CFo"/>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                450KB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-60" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgcdN9lmLweVuigaF63KYw622KnJo8pO4aAjjYmpFEHCgRmvxAilS3o13-2i-Rrmx1wjCT5rhKAx4eh4Wc8s3_1EZywK79cA-exbt368LClIblGBSqh6CUcIy8eEJqxiKNz0a_nqULp2h5rHEczEneinLhTX66k34KsEzVe9cl1BfqBWQxXvFCffV0xCfhSWYdrqJqSESI2FYkj6FcfioMbBlYmEFX1WNkjH770y5pnqqjE-sRVvD1GPNdjkzqiAx-CYIvvz9dni8P"/>
+<div class="absolute inset-0 bg-delete-red/10 border-2 border-delete-red/50"></div>
+<div class="absolute top-2 right-2 z-20 w-5 h-5 rounded-full bg-delete-red flex items-center justify-center shadow-lg">
+<span class="material-symbols-outlined text-white font-black" style="font-size: 14px;">check</span>
+</div>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                3.3MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-90 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuATV4_rKt1BrBieFCJVDe-UxwFXRpKQC3XqMIJNhcJ-liqIpEEYxsn8hKxVTv5AIHLu3CXdOtvF0WgB2fFcPGD1TD4sDCD0u9rKUKgnlZImkSqF7kTQRiVMLTtCH-Q15P5AnF6leJ0GZTIm9zxOrasQo38TDkAZ3wN_rC7MK732NgqhCMVrUupkfJF7IBQRmliew2x_8ElG0mPDro-q3h-45jxKqRFy_s0qtewhk7_7CQM-2Z5Dc2Wei09LOgq1W1CtibFwC3bmlokk"/>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                8.9MB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-90 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARQ_ni1EeDB_oLfIyrTy5wR1y8_9-PdqCIBe5QL3beUB_UDj0qje7XF02QNGnTsykoP5lTRRBX9XhE6At4EpVEiYXmaLwQdzdbzwXN6PAt2WEMGGBVyQeZYPgxJgxlYzrVtKAxWcxJFmI0qOT59HqNIiFqSpM5wDM0gzHdqaw6tOVYYdCRs9VMsk5MrkJwA5ahESejZcPI81nSh__goRSsT5rVDFg4cW7A6nm4hx-t8lto9TIiE644vID6FE5O8K6JuXqoFgVAQDCU"/>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                920KB
+            </div>
+</div>
+<div class="relative aspect-square group overflow-hidden bg-surface">
+<img alt="Grid item" class="w-full h-full object-cover opacity-90 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFvBch3DTnLcW4e4_NjspjoPHkDTQ25ZcBG4e24_i4UkLVqRJB3lPb1iWuz5ljBrTFgJEZX8yKRtyEL3cxgAXBc5BK--QLvkwoEbYeYQgEri1L2mjEoWUbu4AIcCVZTIPmfljKBWNssblP5pHf6tw7UHMZv4HZ72K-Iz3ID8prm8iIyNAQ8TX6rKZVpmWMRVoIu-mMnGj78QXW4xuD3KnzEVk30BI1ZDITw7zwLMtYciaJ-tCCxSF1fthV_NbZcHsXSyMUlwPeCvF3"/>
+<div class="absolute bottom-2 right-2 px-1.5 py-0.5 glass-badge rounded text-[9px] font-mono text-white/90 z-10">
+                1.5MB
+            </div>
+</div>
+</div>
+</main>
+<div class="fixed bottom-0 left-0 w-full z-30 pointer-events-none">
+<div class="absolute bottom-0 left-0 w-full h-40 bg-gradient-to-t from-primary-bg via-primary-bg/90 to-transparent"></div>
+<div class="relative flex flex-col items-center pb-8 px-6">
+<button class="pointer-events-auto group relative flex items-center gap-4 px-10 py-5 bg-delete-red text-white rounded-full shadow-glow-delete transform hover:scale-105 active:scale-95 transition-all mb-8 border border-white/20">
+<span class="material-symbols-outlined font-bold">delete_forever</span>
+<span class="font-display font-bold text-lg uppercase tracking-widest">Delete (4)</span>
+</button>
+<div class="pointer-events-auto w-full max-w-sm bg-surface/40 backdrop-blur-2xl border border-white/5 rounded-3xl p-1.5 flex justify-around items-center">
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-muted py-3" href="#">
+<span class="material-symbols-outlined text-[24px]">style</span>
+<span class="text-[9px] font-display font-bold uppercase tracking-wider">Stack</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-accent-sky py-3" href="#">
+<div class="relative">
+<span class="material-symbols-outlined text-[24px] font-bold">grid_view</span>
+<span class="absolute -top-1 -right-1 w-1.5 h-1.5 bg-accent-sky rounded-full"></span>
+</div>
+<span class="text-[9px] font-display font-bold uppercase tracking-widest">Vault</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center gap-1 text-muted py-3" href="#">
+<span class="material-symbols-outlined text-[24px]">leaderboard</span>
+<span class="text-[9px] font-display font-bold uppercase tracking-wider">Stats</span>
+</a>
+</div>
+</div>
+</div>
+
+</body></html>

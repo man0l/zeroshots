@@ -1,0 +1,44 @@
+{
+  "expo": {
+    "name": "screenshot-organizer",
+    "slug": "screenshot-organizer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "scheme": "screenshot-organizer",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0F172A"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "We need access to your photo library to find and organize screenshots."
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0F172A"
+      },
+      "edgeToEdgeEnabled": true,
+      "permissions": ["android.permission.READ_EXTERNAL_STORAGE", "android.permission.WRITE_EXTERNAL_STORAGE"]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "We need access to your photo library to find and organize screenshots."
+        }
+      ]
+    ]
+  }
+}
