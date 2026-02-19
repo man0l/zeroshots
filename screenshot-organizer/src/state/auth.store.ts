@@ -34,9 +34,9 @@ function getParamsFromUrl(url: string): {
     const hashParams = new URLSearchParams(hash || '')
     const get = (k: string) => params.get(k) ?? hashParams.get(k) ?? undefined
 
-    // Code in path: screenshot-organizer://auth/callback/BASE64CODE (from oauth-callback proxy on Android)
+    // Code in path: screenshot-organizer://auth/callback/BASE64 or exp://host/--/auth/callback/BASE64 (Expo Go)
     const pathname = parsed.pathname ?? ''
-    const pathMatch = pathname.match(/(?:^\/?)?auth\/callback\/(.+)/)
+    const pathMatch = pathname.match(/auth\/callback\/(.+)/)
     const codeFromPath = pathMatch?.[1] ? base64UrlDecode(pathMatch[1]) : undefined
 
     return {
@@ -99,19 +99,20 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    // On Android, use proxy so the app receives the code (query params are often stripped from custom scheme URLs)
+    // Where the app can receive the callback (Expo Go = exp://...; production = custom scheme)
+    const appRedirectBase = makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
+    // On Android, use proxy so the app receives the code in the path (query params often stripped from custom scheme)
     const redirectTo =
       Platform.OS === 'android'
         ? `${getSupabaseUrl()}/functions/v1/oauth-callback`
-        : makeRedirectUri({
-            scheme: 'screenshot-organizer',
-            path: 'auth/callback',
-          })
+        : appRedirectBase
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo,
         skipBrowserRedirect: true,
+        // Proxy uses this to redirect to the app (Expo Go needs exp://... with code in path)
+        state: appRedirectBase,
       },
     })
     if (oauthError) return { error: oauthError }

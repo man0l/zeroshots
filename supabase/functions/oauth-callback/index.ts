@@ -15,10 +15,12 @@ function base64UrlEncode(str: string): string {
 serve(async (req) => {
   const url = new URL(req.url)
   const code = url.searchParams.get('code')
+  const state = url.searchParams.get('state')
   const error = url.searchParams.get('error_description') ?? url.searchParams.get('error')
 
   if (error) {
-    const redirect = `${APP_SCHEME}://auth/callback?error=${encodeURIComponent(error)}`
+    const base = state && /^(https?|exp):\/\//i.test(state) ? state.replace(/\/?$/, '') : `${APP_SCHEME}://auth/callback`
+    const redirect = `${base}?error=${encodeURIComponent(error)}`
     return Response.redirect(redirect, 302)
   }
 
@@ -27,6 +29,10 @@ serve(async (req) => {
   }
 
   const encoded = base64UrlEncode(code)
-  const redirect = `${APP_SCHEME}://auth/callback/${encoded}`
+  // If state is the app's redirect base (e.g. exp://... for Expo Go), redirect there so the app receives the code
+  const redirect =
+    state && /^(https?|exp):\/\//i.test(state)
+      ? `${state.replace(/\/?$/, '')}/${encoded}`
+      : `${APP_SCHEME}://auth/callback/${encoded}`
   return Response.redirect(redirect, 302)
 })
