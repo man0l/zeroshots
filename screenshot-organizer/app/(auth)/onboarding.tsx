@@ -88,7 +88,7 @@ export default function OnboardingScreen() {
     <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
       <View style={styles.header}>
         <Text style={styles.title}>Welcome</Text>
-        <Pressable onPress={handleSkip}>
+        <Pressable onPress={handleSkip} accessibilityRole="button" accessibilityLabel="Skip">
           <Text style={styles.skip}>Skip</Text>
         </Pressable>
       </View>
@@ -118,7 +118,12 @@ export default function OnboardingScreen() {
         ))}
       </View>
 
-      <Pressable style={styles.button} onPress={handleNext}>
+      <Pressable
+        style={styles.button}
+        onPress={handleNext}
+        accessibilityRole="button"
+        accessibilityLabel={currentIndex === ONBOARDING_SLIDES.length - 1 ? 'Get Started' : 'Next'}
+      >
         <Text style={styles.buttonText}>
           {currentIndex === ONBOARDING_SLIDES.length - 1 ? 'Get Started' : 'Next'}
         </Text>

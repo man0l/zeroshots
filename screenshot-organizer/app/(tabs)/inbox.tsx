@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react'
 import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native'
 import { Image } from 'expo-image'
+import { Ionicons } from '@expo/vector-icons'
 import { GestureDetector, Gesture } from 'react-native-gesture-handler'
 import Animated, { 
   useSharedValue, 
@@ -103,7 +104,12 @@ export default function InboxScreen() {
       <View style={styles.container}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Gallery Access Required</Text>
-          <Pressable style={styles.permissionButton} onPress={() => requestPermission()}>
+          <Pressable
+            style={styles.permissionButton}
+            onPress={() => requestPermission()}
+            accessibilityRole="button"
+            accessibilityLabel="Grant Permission"
+          >
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </Pressable>
         </View>
@@ -127,12 +133,14 @@ export default function InboxScreen() {
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>All Done!</Text>
           <Text style={styles.emptySubtitle}>You've reviewed all screenshots</Text>
-          <Pressable 
+          <Pressable
             style={styles.finishButton}
             onPress={() => {
               const stats = endSession()
               router.push('/review-session')
             }}
+            accessibilityRole="button"
+            accessibilityLabel="View Summary"
           >
             <Text style={styles.finishButtonText}>View Summary</Text>
           </Pressable>
@@ -203,21 +211,27 @@ export default function InboxScreen() {
       </View>
 
       <View style={styles.actions}>
-        <Pressable 
+        <Pressable
           style={[styles.actionButton, styles.deleteButton]}
           onPress={() => handleAction('delete')}
+          accessibilityRole="button"
+          accessibilityLabel="Delete"
         >
           <Ionicons name="close" size={32} color={colors.delete} />
         </Pressable>
-        <Pressable 
+        <Pressable
           style={[styles.actionButton, styles.archiveButton]}
           onPress={() => handleAction('archive')}
+          accessibilityRole="button"
+          accessibilityLabel="Archive"
         >
           <Ionicons name="archive-outline" size={24} color={colors.archive} />
         </Pressable>
-        <Pressable 
+        <Pressable
           style={[styles.actionButton, styles.keepButton]}
           onPress={() => handleAction('keep')}
+          accessibilityRole="button"
+          accessibilityLabel="Keep"
         >
           <Ionicons name="checkmark-done" size={32} color={colors.keep} />
         </Pressable>
@@ -231,8 +245,6 @@ export default function InboxScreen() {
     </View>
   )
 }
-
-import { Ionicons } from '@expo/vector-icons'
 
 const styles = StyleSheet.create({
   container: {

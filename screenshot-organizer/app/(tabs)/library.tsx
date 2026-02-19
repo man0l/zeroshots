@@ -83,6 +83,8 @@ export default function LibraryScreen() {
         activeFilter === filter && styles.filterButtonActive,
       ]}
       onPress={() => setActiveFilter(filter)}
+      accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <Text style={[
         styles.filterText,
@@ -192,7 +194,12 @@ export default function LibraryScreen() {
 
       {selectedIds.size > 0 && (
         <View style={[styles.batchActions, { bottom: insets.bottom + 100 }]}>
-          <Pressable style={styles.deleteButton} onPress={handleBatchDelete}>
+          <Pressable
+            style={styles.deleteButton}
+            onPress={handleBatchDelete}
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${selectedIds.size} selected`}
+          >
             <Ionicons name="trash-outline" size={20} color={colors.textPrimary} />
             <Text style={styles.deleteButtonText}>
               Delete ({selectedIds.size})

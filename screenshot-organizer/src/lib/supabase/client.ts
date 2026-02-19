@@ -1,7 +1,17 @@
+import { Platform } from 'react-native'
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
-const supabaseUrl = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+// On Android emulator, "localhost" is the device itself. Use 10.0.2.2 to reach the host machine.
+function getSupabaseUrl(): string {
+  const url = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
+  if (Platform.OS === 'android' && (url.includes('localhost') || url.includes('127.0.0.1'))) {
+    return url.replace(/localhost|127\.0\.0\.1/g, '10.0.2.2')
+  }
+  return url
+}
+
+const supabaseUrl = getSupabaseUrl()
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
@@ -10,6 +20,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    // PKCE puts code in query params (not hash), so redirect works on Android where hash is often stripped
+    flowType: 'pkce',
   },
 })
 

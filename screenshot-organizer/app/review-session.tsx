@@ -114,7 +114,12 @@ export default function ReviewSessionScreen() {
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
       <View style={styles.header}>
-        <Pressable onPress={() => router.back()} style={styles.closeButton}>
+        <Pressable
+          onPress={() => router.back()}
+          style={styles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="Close"
+        >
           <Ionicons name="close" size={24} color={colors.textMuted} />
         </Pressable>
         <Text style={styles.headerTitle}>Session Recap</Text>
@@ -156,10 +161,12 @@ export default function ReviewSessionScreen() {
         </View>
 
         <View style={styles.actions}>
-          <Pressable 
-            style={[styles.finishButton, (isSaving || isSaved) && styles.finishButtonDisabled]} 
+          <Pressable
+            style={[styles.finishButton, (isSaving || isSaved) && styles.finishButtonDisabled]}
             onPress={handleFinish}
             disabled={isSaving}
+            accessibilityRole="button"
+            accessibilityLabel={isSaved ? 'Session saved' : 'Finish session'}
           >
             {isSaving ? (
               <ActivityIndicator color={colors.background} />
@@ -173,7 +180,12 @@ export default function ReviewSessionScreen() {
             )}
           </Pressable>
 
-          <Pressable style={styles.shareButton} onPress={handleShare}>
+          <Pressable
+            style={styles.shareButton}
+            onPress={handleShare}
+            accessibilityRole="button"
+            accessibilityLabel="Share stats"
+          >
             <Ionicons name="share-outline" size={18} color={colors.textMuted} />
             <Text style={styles.shareButtonText}>Share Stats</Text>
           </Pressable>

@@ -56,7 +56,12 @@ export default function PaywallScreen() {
           </View>
 
           <View style={styles.actions}>
-            <Pressable style={styles.upgradeButton} onPress={handleUpgrade}>
+            <Pressable
+              style={styles.upgradeButton}
+              onPress={handleUpgrade}
+              accessibilityRole="button"
+              accessibilityLabel="Unlock Unlimited"
+            >
               <View style={styles.upgradeContent}>
                 <Ionicons name="flash" size={24} color={colors.textPrimary} />
                 <Text style={styles.upgradeText}>Unlock Unlimited</Text>
@@ -66,7 +71,12 @@ export default function PaywallScreen() {
               </View>
             </Pressable>
 
-            <Pressable style={styles.waitButton} onPress={handleWait}>
+            <Pressable
+              style={styles.waitButton}
+              onPress={handleWait}
+              accessibilityRole="button"
+              accessibilityLabel="Wait 24h for next session"
+            >
               <Ionicons name="time-outline" size={18} color={colors.textMuted} />
               <Text style={styles.waitText}>Wait 24h for next session</Text>
             </Pressable>

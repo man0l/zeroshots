@@ -34,7 +34,11 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Subscription</Text>
         {entitlement === 'free' ? (
-          <Pressable style={styles.upgradeCard}>
+          <Pressable
+            style={styles.upgradeCard}
+            accessibilityRole="button"
+            accessibilityLabel="Unlock Unlimited"
+          >
             <View style={styles.upgradeContent}>
               <Ionicons name="infinite" size={24} color={colors.primary} />
               <View>
@@ -57,15 +61,19 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Debug</Text>
         <View style={styles.card}>
-          <Pressable 
+          <Pressable
             style={styles.row}
             onPress={() => setEntitlement('free')}
+            accessibilityRole="button"
+            accessibilityLabel="Set Free"
           >
             <Text style={styles.label}>Set Free</Text>
           </Pressable>
-          <Pressable 
+          <Pressable
             style={styles.row}
             onPress={() => setEntitlement('lifetime')}
+            accessibilityRole="button"
+            accessibilityLabel="Set Lifetime"
           >
             <Text style={styles.label}>Set Lifetime</Text>
           </Pressable>

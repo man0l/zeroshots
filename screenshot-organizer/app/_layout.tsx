@@ -7,41 +7,47 @@ import { useEffect, useState } from 'react'
 import { colors } from '../src/lib/theme'
 import { useAuthStore } from '../src/state/auth.store'
 
+const BOOTSTRAP_TIMEOUT_MS = 5000
+
 export default function RootLayout() {
-  // Custom fonts loaded from /assets/fonts/. Files must exist for successful loading.
+  const [bootstrapTimedOut, setBootstrapTimedOut] = useState(false)
   const [fontsLoaded] = useFonts({
     SpaceGrotesk: require('../assets/fonts/SpaceGrotesk-Regular.ttf'),
     Inter: require('../assets/fonts/Inter-Regular.ttf'),
     JetBrainsMono: require('../assets/fonts/JetBrainsMono-Regular.ttf'),
   })
-  
+
   const segments = useSegments()
   const router = useRouter()
-  const [isReady, setIsReady] = useState(false)
   const { session, isLoading, isOnboarded } = useAuthStore()
 
+  // Don't block forever: if fonts or auth hang (known on some Android builds), show app after timeout
+  const isReady = (fontsLoaded && !isLoading) || bootstrapTimedOut
+
   useEffect(() => {
-    if (isLoading || !fontsLoaded) return
+    const t = setTimeout(() => setBootstrapTimedOut(true), BOOTSTRAP_TIMEOUT_MS)
+    return () => clearTimeout(t)
+  }, [])
+
+  // Native splash hides when first frame renders; no expo-splash-screen import to avoid Metro resolve errors on some Android setups
+
+  useEffect(() => {
+    if (!isReady) return
 
     const inAuthGroup = segments[0] === '(auth)'
-    
+
     if (!session && !inAuthGroup) {
-      // Redirect to sign-in if not authenticated
-      router.replace('/sign-in')
+      router.replace('/(auth)/sign-in')
     } else if (session && inAuthGroup) {
-      // Redirect to onboarding if authenticated but not onboarded
       if (!isOnboarded) {
-        router.replace('/onboarding')
+        router.replace('/(auth)/onboarding')
       } else {
-        // Redirect to main app if onboarded
         router.replace('/(tabs)/inbox')
       }
     }
+  }, [session, isLoading, segments, isOnboarded, fontsLoaded, bootstrapTimedOut, isReady])
 
-    setIsReady(true)
-  }, [session, isLoading, segments, isOnboarded, fontsLoaded])
-
-  if (!fontsLoaded || isLoading || !isReady) {
+  if (!isReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background }}>
         <ActivityIndicator color={colors.primary} />
@@ -59,6 +65,7 @@ export default function RootLayout() {
           animation: 'fade',
         }}
       >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen 

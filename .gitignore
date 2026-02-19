@@ -46,6 +46,10 @@ web-demo/playwright-report/
 # Supabase volumes (local DB data - not for version control)
 supabase/volumes/
 
+# Google / service account credentials - never commit
+**/gcloud.json
+**/service-account*.json
+
 # Build artifacts
 *.pem
 mcp_jobs.sqlite

@@ -1,7 +1,9 @@
-import React, { useState } from 'react'
-import { View, Text, TextInput, Pressable, StyleSheet, Alert, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect } from 'react'
+import { View, Text, TextInput, Pressable, StyleSheet, ActivityIndicator, ScrollView, KeyboardAvoidingView, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
+import * as Linking from 'expo-linking'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../src/state/auth.store'
 import { colors, fonts, spacing, radii } from '../../src/lib/theme'
 
@@ -12,47 +14,125 @@ export default function SignInScreen() {
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState<string | null>(null)
+  const { createSessionFromUrl } = useAuthStore()
+
+  // Handle OAuth / magic link redirect into app
+  useEffect(() => {
+    const subscription = Linking.addEventListener('url', ({ url }) => {
+      createSessionFromUrl(url).then(({ error: urlError }) => {
+        if (urlError) setError(urlError.message)
+      })
+    })
+    Linking.getInitialURL().then((url) => {
+      if (url) createSessionFromUrl(url).then(({ error: urlError }) => { if (urlError) setError(urlError.message) })
+    })
+    return () => subscription.remove()
+  }, [createSessionFromUrl])
 
   const handleSubmit = async () => {
+    setError(null)
+    setSuccess(null)
+
     if (!email || !password) {
-      Alert.alert('Error', 'Please enter both email and password')
+      setError('Please enter both email and password')
+      return
+    }
+
+    if (isSignUp && password.length < 6) {
+      setError('Password must be at least 6 characters')
       return
     }
 
     setLoading(true)
     const { signIn, signUp } = useAuthStore.getState()
     
-    const { error } = isSignUp 
+    const result = isSignUp 
       ? await signUp(email, password)
       : await signIn(email, password)
 
     setLoading(false)
 
-    if (error) {
-      Alert.alert('Error', error.message)
+    if (result.error) {
+      setError(result.error.message)
     } else if (isSignUp) {
-      Alert.alert('Success', 'Check your email to confirm your account!')
+      setSuccess('Account created! Check your email to confirm.')
       setIsSignUp(false)
     }
-    // Successful sign-in will trigger auth state change and redirect
+  }
+
+  const handleGoogleSignIn = async () => {
+    setError(null)
+    setGoogleLoading(true)
+    const result = await useAuthStore.getState().signInWithGoogle()
+    setGoogleLoading(false)
+    if (result.error) setError(result.error.message)
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
-      <View style={styles.header}>
-        <Text style={styles.title}>Screenshot Organizer</Text>
-        <Text style={styles.subtitle}>
-          {isSignUp ? 'Create your account' : 'Sign in to your account'}
-        </Text>
-      </View>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: insets.top + spacing.xl }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+    >
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.header}>
+          <Text style={styles.title}>Screenshot Organizer</Text>
+          <Text style={styles.subtitle}>
+            {isSignUp ? 'Create your account' : 'Sign in to your account'}
+          </Text>
+        </View>
 
-      <View style={styles.form}>
+        <View style={styles.form}>
+        {error && (
+          <View style={styles.errorBanner}>
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
+        {success && (
+          <View style={styles.successBanner}>
+            <Text style={styles.successText}>{success}</Text>
+          </View>
+        )}
+
+        {/* Google first so it's always visible without scrolling */}
+        <Pressable
+          style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
+          onPress={handleGoogleSignIn}
+          disabled={googleLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Sign in with Google"
+        >
+          {googleLoading ? (
+            <ActivityIndicator color={colors.textPrimary} />
+          ) : (
+            <View style={styles.googleButtonContent}>
+              <Ionicons name="logo-google" size={22} color="#EA4335" />
+              <Text style={styles.googleButtonText}>Sign in with Google</Text>
+            </View>
+          )}
+        </Pressable>
+
+        <View style={styles.divider}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>or</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
         <View style={styles.inputContainer}>
           <Text style={styles.label}>Email</Text>
           <TextInput
             style={styles.input}
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(t) => { setEmail(t); setError(null) }}
             placeholder="you@example.com"
             placeholderTextColor={colors.textMuted}
             autoCapitalize="none"
@@ -66,18 +146,23 @@ export default function SignInScreen() {
           <TextInput
             style={styles.input}
             value={password}
-            onChangeText={setPassword}
+            onChangeText={(t) => { setPassword(t); setError(null) }}
             placeholder="••••••••"
             placeholderTextColor={colors.textMuted}
             secureTextEntry
             editable={!loading}
           />
+          {isSignUp && (
+            <Text style={styles.passwordHint}>Minimum 6 characters</Text>
+          )}
         </View>
 
         <Pressable 
           style={[styles.button, loading && styles.buttonDisabled]}
           onPress={handleSubmit}
           disabled={loading}
+          accessibilityRole="button"
+          accessibilityLabel={isSignUp ? 'Create Account' : 'Sign In'}
         >
           {loading ? (
             <ActivityIndicator color={colors.background} />
@@ -90,8 +175,10 @@ export default function SignInScreen() {
 
         <Pressable 
           style={styles.switchButton}
-          onPress={() => setIsSignUp(!isSignUp)}
-          disabled={loading}
+          onPress={() => { setIsSignUp(!isSignUp); setError(null); setSuccess(null) }}
+          disabled={loading || googleLoading}
+          accessibilityRole="button"
+          accessibilityLabel={isSignUp ? 'Sign In' : 'Sign Up'}
         >
           <Text style={styles.switchText}>
             {isSignUp 
@@ -101,13 +188,14 @@ export default function SignInScreen() {
         </Pressable>
       </View>
 
-      <View style={styles.footer}>
-        <Text style={styles.hint}>
-          Self-hosted Supabase backend{'\n'}
-          http://localhost:8000
-        </Text>
-      </View>
-    </View>
+        <View style={styles.footer}>
+          <Text style={styles.hint}>
+            Self-hosted Supabase backend{'\n'}
+            http://localhost:8000
+          </Text>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -116,6 +204,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
     paddingHorizontal: spacing.lg,
+  },
+  scroll: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: spacing.xxl,
   },
   header: {
     marginBottom: spacing.xxl,
@@ -152,6 +247,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
+  passwordHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  errorBanner: {
+    backgroundColor: 'rgba(239, 68, 68, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.3)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  errorText: {
+    color: colors.delete,
+    fontSize: 14,
+  },
+  successBanner: {
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.3)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  successText: {
+    color: colors.keep,
+    fontSize: 14,
+  },
   button: {
     backgroundColor: colors.primary,
     borderRadius: radii.lg,
@@ -166,6 +288,39 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.background,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginVertical: spacing.sm,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  dividerText: {
+    color: colors.textMuted,
+    fontSize: 12,
+  },
+  googleButton: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  googleButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  googleButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
   },
   switchButton: {
     alignItems: 'center',

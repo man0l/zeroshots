@@ -50,6 +50,15 @@ EXPO_PUBLIC_SUPABASE_URL=http://localhost:8000
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-from-env
 ```
 
+### 6. Google sign-in (optional)
+
+To use "Sign in with Google" in the app:
+
+1. In `supabase/.env`: set `ENABLE_GOOGLE_AUTH=true`, and set `ADDITIONAL_REDIRECT_URLS=screenshot-organizer://**,http://localhost:8081/**` (already in `.env.example`).
+2. Create an OAuth 2.0 Client ID in [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Add authorized redirect URI: `http://localhost:8000/auth/v1/callback` (or your `API_EXTERNAL_URL` + `/auth/v1/callback`).
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `supabase/.env`.
+4. Restart Auth: `docker compose restart auth`.
+
 ## Services Overview
 
 - **PostgreSQL** - Primary database
