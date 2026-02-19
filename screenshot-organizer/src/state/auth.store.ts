@@ -1,13 +1,26 @@
+import { Platform } from 'react-native'
 import { create } from 'zustand'
 import { Session, User } from '@supabase/supabase-js'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
-import { supabase } from '../lib/supabase/client'
+import { supabase, getSupabaseUrl } from '../lib/supabase/client'
 
 // Required for web OAuth completion
 WebBrowser.maybeCompleteAuthSession?.()
 
-/** Parse OAuth redirect URL: code (PKCE), or access_token/refresh_token (implicit), or error */
+/** Base64url decode (for code in path from oauth-callback proxy) */
+function base64UrlDecode(str: string): string {
+  try {
+    const base64 = str.replace(/-/g, '+').replace(/_/g, '/')
+    const pad = base64.length % 4
+    const padded = pad ? base64 + '='.repeat(4 - pad) : base64
+    return decodeURIComponent(escape(atob(padded)))
+  } catch {
+    return ''
+  }
+}
+
+/** Parse OAuth redirect URL: code in query, in path (proxy), or access_token/refresh_token (implicit), or error */
 function getParamsFromUrl(url: string): {
   code?: string
   access_token?: string
@@ -20,8 +33,14 @@ function getParamsFromUrl(url: string): {
     const hash = parsed.hash?.replace(/^#/, '')
     const hashParams = new URLSearchParams(hash || '')
     const get = (k: string) => params.get(k) ?? hashParams.get(k) ?? undefined
+
+    // Code in path: screenshot-organizer://auth/callback/BASE64CODE (from oauth-callback proxy on Android)
+    const pathname = parsed.pathname ?? ''
+    const pathMatch = pathname.match(/(?:^\/?)?auth\/callback\/(.+)/)
+    const codeFromPath = pathMatch?.[1] ? base64UrlDecode(pathMatch[1]) : undefined
+
     return {
-      code: get('code'),
+      code: get('code') ?? (codeFromPath || undefined),
       access_token: get('access_token'),
       refresh_token: get('refresh_token'),
       error: get('error_description') ?? get('error'),
@@ -80,10 +99,14 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    const redirectTo = makeRedirectUri({
-      scheme: 'screenshot-organizer',
-      path: 'auth/callback',
-    })
+    // On Android, use proxy so the app receives the code (query params are often stripped from custom scheme URLs)
+    const redirectTo =
+      Platform.OS === 'android'
+        ? `${getSupabaseUrl()}/functions/v1/oauth-callback`
+        : makeRedirectUri({
+            scheme: 'screenshot-organizer',
+            path: 'auth/callback',
+          })
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -126,7 +149,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: null }
     }
 
-    return { error: new Error('No access token or code in redirect. On Android, use PKCE (flowType: \'pkce\') in Supabase client.') }
+    const hint = url.length > 80 ? url.slice(0, 80) + '…' : url
+    return { error: new Error(`No access token or code in redirect. Received: ${hint}`) }
   },
 
   signOut: async () => {

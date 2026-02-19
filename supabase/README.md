@@ -30,8 +30,8 @@ docker compose ps
 
 | Service | URL | Description |
 |---------|-----|-------------|
-| Supabase Studio | http://localhost:8000 | Database UI |
-| API Endpoint | http://localhost:8000 | REST API |
+| Supabase Studio | http://localhost:8001 | Database UI |
+| API Endpoint (Kong) | http://localhost:8080 | REST API, Auth, Functions |
 | PostgreSQL | localhost:5432 | Direct DB access |
 
 ### 4. Run Migrations
@@ -46,18 +46,28 @@ docker exec supabase-db psql -U postgres -d postgres -f /docker-entrypoint-initd
 Update `screenshot-organizer/.env`:
 
 ```env
-EXPO_PUBLIC_SUPABASE_URL=http://localhost:8000
+EXPO_PUBLIC_SUPABASE_URL=http://localhost:8080
 EXPO_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-from-env
 ```
+(Use 8080 — Kong is on host port 8080 in this compose.)
 
 ### 6. Google sign-in (optional)
 
 To use "Sign in with Google" in the app:
 
-1. In `supabase/.env`: set `ENABLE_GOOGLE_AUTH=true`, and set `ADDITIONAL_REDIRECT_URLS=screenshot-organizer://**,http://localhost:8081/**` (already in `.env.example`).
-2. Create an OAuth 2.0 Client ID in [Google Cloud Console](https://console.cloud.google.com/apis/credentials). Add authorized redirect URI: `http://localhost:8000/auth/v1/callback` (or your `API_EXTERNAL_URL` + `/auth/v1/callback`).
-3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `supabase/.env`.
+1. In `supabase/.env`: set `ENABLE_GOOGLE_AUTH=true`, and set `ADDITIONAL_REDIRECT_URLS` (see `.env.example`).
+2. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials):
+   - Create an OAuth 2.0 Client ID of type **Web application** (so you can set redirect URIs).
+   - Under **Authorized redirect URIs**, add this **exact** URI (fixes "Error 400: redirect_uri_mismatch"):
+     - `http://localhost:8080/auth/v1/callback`
+   - (Port 8080 = Kong in this compose. If your `API_EXTERNAL_URL` is different, use that base + `/auth/v1/callback`.)
+   - Save.
+3. Set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` in `supabase/.env` from that client.
 4. Restart Auth: `docker compose restart auth`.
+
+**If you see "Error 400: redirect_uri_mismatch":** GoTrue sends to Google the URI `API_EXTERNAL_URL` + `/auth/v1/callback`. In this compose, Kong is on port 8080, so `API_EXTERNAL_URL` is `http://localhost:8080` and you must add `http://localhost:8080/auth/v1/callback` in Google Console (no trailing slash). Save and wait a few minutes.
+
+**Production (Traefik / same-host callback):** If you put Supabase behind Traefik with a public domain (e.g. `api.yourdomain.com`), use an **auth-relay** style route so the OAuth callback is on the same host as your API (GoTrue and Google are happy with one redirect URI). Example (from [salonease](https://github.com/man0l/salonease/blob/master/docker-compose.prod.yml)): expose the callback at `https://yourdomain.com/auth-relay` and rewrite to `/functions/v1/oauth-callback`; then in the app set `redirectTo` to `https://yourdomain.com/auth-relay` and add that URL to `ADDITIONAL_REDIRECT_URLS` and to Google’s Authorized redirect URIs (as the GoTrue callback will be that host + path).
 
 ## Services Overview
 
