@@ -99,9 +99,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    // Where the app can receive the callback (Expo Go = exp://...; production = custom scheme)
-    const appRedirectBase = makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
-    // On Android, use proxy so the app receives the code in the path (query params often stripped from custom scheme)
+    // Web should use full-page OAuth redirect (not openAuthSessionAsync), so
+    // Supabase can manage callback parsing/session from URL without PKCE verifier issues.
+    if (Platform.OS === 'web') {
+      const redirectTo = typeof window !== 'undefined'
+        ? `${window.location.origin}/sign-in`
+        : makeRedirectUri({ path: 'sign-in' })
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: false,
+        },
+      })
+      return { error }
+    }
+
+    // On Android: use proxy URL so GoTrue redirects there; state = where to send the code (Expo Go = exp://, dev build = custom scheme)
+    const appRedirectBase =
+      Platform.OS === 'android'
+        ? makeRedirectUri({ path: 'auth/callback' }) // Expo Go returns exp://...; dev build returns custom scheme
+        : makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
     const redirectTo =
       Platform.OS === 'android'
         ? `${getSupabaseUrl()}/functions/v1/oauth-callback`
@@ -111,8 +129,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       options: {
         redirectTo,
         skipBrowserRedirect: true,
-        // Proxy uses this to redirect to the app (Expo Go needs exp://... with code in path)
-        state: appRedirectBase,
       },
     })
     if (oauthError) return { error: oauthError }
@@ -126,6 +142,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   createSessionFromUrl: async (url: string) => {
     const { code, access_token, refresh_token, error: urlError } = getParamsFromUrl(url)
+    // Ignore normal app launch URLs (e.g. exp://host:8081) that are not OAuth callbacks.
+    // Sign-in screen listens to Linking URLs, and Expo Go initial URL is not an auth redirect.
+    const isAuthCallbackUrl = /auth\/callback/i.test(url)
+    if (!isAuthCallbackUrl && !code && !access_token && !urlError) {
+      return { error: null }
+    }
     if (urlError) return { error: new Error(urlError) }
 
     // PKCE: redirect has ?code=... (works on Android; hash is often stripped)

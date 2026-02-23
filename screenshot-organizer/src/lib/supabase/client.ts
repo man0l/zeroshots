@@ -19,8 +19,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     storage: AsyncStorage,
     autoRefreshToken: true,
     persistSession: true,
-    detectSessionInUrl: false,
-    flowType: 'pkce' as const, // Required for Android: code in query params; hash is stripped on custom scheme redirect
+    detectSessionInUrl: Platform.OS === 'web',
+    flowType: (Platform.OS === 'web' ? 'implicit' : 'pkce') as 'implicit' | 'pkce',
   },
 })
 

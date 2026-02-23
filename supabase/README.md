@@ -67,6 +67,8 @@ To use "Sign in with Google" in the app:
 
 **If you see "Error 400: redirect_uri_mismatch":** GoTrue sends to Google the URI `API_EXTERNAL_URL` + `/auth/v1/callback`. In this compose, Kong is on port 8080, so `API_EXTERNAL_URL` is `http://localhost:8080` and you must add `http://localhost:8080/auth/v1/callback` in Google Console (no trailing slash). Save and wait a few minutes.
 
+**Android / emulator:** For Google sign-in on the Android emulator (adb reverse, `API_EXTERNAL_URL`, app `.env`), see the app’s **[ANDROID_OAUTH.md](../screenshot-organizer/ANDROID_OAUTH.md)**.
+
 **Production (Traefik / same-host callback):** If you put Supabase behind Traefik with a public domain (e.g. `api.yourdomain.com`), use an **auth-relay** style route so the OAuth callback is on the same host as your API (GoTrue and Google are happy with one redirect URI). Example (from [salonease](https://github.com/man0l/salonease/blob/master/docker-compose.prod.yml)): expose the callback at `https://yourdomain.com/auth-relay` and rewrite to `/functions/v1/oauth-callback`; then in the app set `redirectTo` to `https://yourdomain.com/auth-relay` and add that URL to `ADDITIONAL_REDIRECT_URLS` and to Google’s Authorized redirect URIs (as the GoTrue callback will be that host + path).
 
 ## Services Overview

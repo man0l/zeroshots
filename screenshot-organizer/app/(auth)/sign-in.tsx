@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router'
 import * as Linking from 'expo-linking'
 import { Ionicons } from '@expo/vector-icons'
 import { useAuthStore } from '../../src/state/auth.store'
+import { getSupabaseUrl } from '../../src/lib/supabase/client'
 import { colors, fonts, spacing, radii } from '../../src/lib/theme'
 
 export default function SignInScreen() {
@@ -191,7 +192,11 @@ export default function SignInScreen() {
         <View style={styles.footer}>
           <Text style={styles.hint}>
             Self-hosted Supabase backend{'\n'}
-            http://localhost:8000
+            {getSupabaseUrl()}
+          </Text>
+          <Text style={[styles.hint, styles.redirectHint]}>
+            Error 400 redirect_uri_mismatch? In Google Console → Credentials → your OAuth client → Authorized redirect URIs add exactly:{'\n'}
+            http://localhost:8080/auth/v1/callback
           </Text>
         </View>
       </ScrollView>
@@ -340,5 +345,9 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: 'center',
     lineHeight: 18,
+  },
+  redirectHint: {
+    marginTop: spacing.sm,
+    fontSize: 11,
   },
 })
