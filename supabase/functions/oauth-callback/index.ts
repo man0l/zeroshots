@@ -6,15 +6,21 @@
  * in the URL fragment, then client-side JavaScript reads the fragment and
  * redirects to the app's deep link.
  *
- * The app's deep link URL is passed via the `redirect` query parameter which
- * is preserved through the GoTrue redirect (fragments are appended AFTER the
- * full URL including query string).
+ * The app passes its deep-link URL via the `redirect` query parameter. GoTrue
+ * preserves query params when appending the token hash fragment, so the relay
+ * page can read both `?redirect=<url>` and `#access_token=...`.
+ *
+ * Works with both Expo Go (`exp://host:port/--/auth/callback`) and standalone
+ * builds (`screenshot-organizer://auth/callback`).
  */
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const APP_REDIRECT = 'screenshot-organizer://auth/callback';
+const DEFAULT_REDIRECT = 'screenshot-organizer://auth/callback';
 
-Deno.serve((_req: Request) => {
+Deno.serve((req: Request) => {
+  const url = new URL(req.url);
+  const appRedirect = url.searchParams.get('redirect') || DEFAULT_REDIRECT;
+
   const html = `<!DOCTYPE html>
 <html>
 <head>
@@ -45,11 +51,12 @@ Deno.serve((_req: Request) => {
   <script>
     (function() {
       var hash = window.location.hash;
-      var redirect = '${APP_REDIRECT}';
+      var redirect = decodeURIComponent('${encodeURIComponent(appRedirect)}');
 
       if (hash) {
         var tokenParams = hash.substring(1);
-        window.location.href = redirect + '?' + tokenParams;
+        var sep = redirect.indexOf('?') === -1 ? '?' : '&';
+        window.location.href = redirect + sep + tokenParams;
       } else {
         document.querySelector('p').textContent = 'Authentication failed. Please try again.';
       }
