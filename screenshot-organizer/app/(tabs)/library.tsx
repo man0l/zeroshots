@@ -6,19 +6,21 @@ import {
   FlatList, 
   Pressable,
   Dimensions,
+  ScrollView,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { BlurView } from 'expo-blur'
 import { useGallery } from '../../src/hooks/useGallery'
 import { colors, fonts, spacing, radii, shadows } from '../../src/lib/theme'
 import { getTagColor } from '../../src/features/screenshot-inbox/classifyAssets'
 import { useRouter } from 'expo-router'
+import { LinearGradient } from 'expo-linear-gradient'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const GRID_SIZE = (SCREEN_WIDTH - 2) / 3
+const GRID_GAP = 1
+const GRID_SIZE = (SCREEN_WIDTH - GRID_GAP * 2) / 3
 
 type FilterType = 'all' | 'screenshots' | 'oldest' | 'largest'
 
@@ -75,45 +77,43 @@ export default function LibraryScreen() {
     }
   }
 
-  const renderFilter = (filter: FilterType, label: string) => (
-    <Pressable
-      key={filter}
-      style={[
-        styles.filterButton,
-        activeFilter === filter && styles.filterButtonActive,
-      ]}
-      onPress={() => setActiveFilter(filter)}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-    >
-      <Text style={[
-        styles.filterText,
-        activeFilter === filter && styles.filterTextActive,
-      ]}>
-        {label}
-      </Text>
-    </Pressable>
-  )
+  const filters: { key: FilterType; label: string }[] = [
+    { key: 'all', label: 'All Items' },
+    { key: 'screenshots', label: 'Screenshots' },
+    { key: 'oldest', label: 'Oldest' },
+    { key: 'largest', label: 'Largest' },
+  ]
 
-  const renderItem = ({ item }: { item: typeof assets[0] }) => {
+  const renderItem = ({ item, index }: { item: typeof assets[0]; index: number }) => {
     const isSelected = selectedIds.has(item.id)
     
     return (
       <Pressable
-        style={styles.gridItem}
+        style={[
+          styles.gridItem,
+          { marginRight: (index + 1) % 3 === 0 ? 0 : GRID_GAP },
+          { marginBottom: GRID_GAP },
+        ]}
         onPress={() => toggleSelection(item.id)}
       >
         <Image
           source={{ uri: item.uri }}
-          style={[styles.thumbnail, isSelected && styles.thumbnailSelected]}
+          style={[
+            styles.thumbnail,
+            { opacity: isSelected ? 0.6 : 0.9 },
+          ]}
           contentFit="cover"
         />
         {isSelected && (
-          <View style={styles.selectionOverlay}>
+          <>
+            <View style={styles.selectionOverlay} />
             <View style={styles.checkmark}>
               <Ionicons name="checkmark" size={14} color={colors.textPrimary} />
             </View>
-          </View>
+          </>
+        )}
+        {!isSelected && (
+          <View style={styles.checkmarkEmpty} />
         )}
         <View style={styles.sizeBadge}>
           <Text style={styles.sizeText}>
@@ -122,36 +122,62 @@ export default function LibraryScreen() {
               : `${Math.round(item.size / 1024)}KB`}
           </Text>
         </View>
-        {item.tags && item.tags.length > 0 && (
-          <View style={[styles.tagBadge, { backgroundColor: getTagColor(item.tags[0]) + '40' }]}>
-            <Text style={[styles.tagText, { color: getTagColor(item.tags[0]) }]}>
-              #{item.tags[0]}
-            </Text>
-          </View>
-        )}
       </Pressable>
     )
   }
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={[styles.header, { paddingTop: insets.top + spacing.md }]}>
-        <Pressable onPress={() => router.back()}>
+        <Pressable 
+          style={styles.headerButton}
+          onPress={() => router.back()}
+        >
           <Ionicons name="chevron-back" size={24} color={colors.textMuted} />
         </Pressable>
         <Text style={styles.title}>Library</Text>
-        <Ionicons name="ellipsis-horizontal" size={24} color={colors.textMuted} />
+        <Pressable style={styles.headerButton}>
+          <Ionicons name="ellipsis-horizontal" size={24} color={colors.textMuted} />
+        </Pressable>
       </View>
 
-      <View style={styles.filters}>
-        {renderFilter('all', 'All Items')}
-        {renderFilter('screenshots', 'Screenshots')}
-        {renderFilter('oldest', 'Oldest')}
-        {renderFilter('largest', 'Largest')}
-      </View>
+      {/* Filter tabs */}
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filtersContent}
+        style={styles.filters}
+      >
+        {filters.map(({ key, label }) => (
+          <Pressable
+            key={key}
+            style={[
+              styles.filterButton,
+              activeFilter === key && styles.filterButtonActive,
+            ]}
+            onPress={() => setActiveFilter(key)}
+            accessibilityRole="button"
+            accessibilityLabel={label}
+          >
+            <Text style={[
+              styles.filterText,
+              activeFilter === key && styles.filterTextActive,
+            ]}>
+              {label}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
 
+      {/* Tag filters (if available) */}
       {availableTags.length > 0 && (
-        <View style={styles.tagFilters}>
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tagFiltersContent}
+          style={styles.tagFilters}
+        >
           <Pressable
             style={[styles.tagButton, !activeTag && styles.tagButtonActive]}
             onPress={() => setActiveTag(null)}
@@ -179,53 +205,67 @@ export default function LibraryScreen() {
               </Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
       )}
 
-      <FlatList
-        data={filteredAssets}
-        renderItem={renderItem}
-        keyExtractor={item => item.id}
-        numColumns={3}
-        style={styles.grid}
-        contentContainerStyle={{ paddingBottom: 200 }}
-        showsVerticalScrollIndicator={false}
-      />
+      {/* Grid */}
+      <View style={styles.gridBorder}>
+        <FlatList
+          data={filteredAssets}
+          renderItem={renderItem}
+          keyExtractor={item => item.id}
+          numColumns={3}
+          style={styles.grid}
+          contentContainerStyle={styles.gridContent}
+          showsVerticalScrollIndicator={false}
+        />
+      </View>
 
-      {selectedIds.size > 0 && (
-        <View style={[styles.batchActions, { bottom: insets.bottom + 100 }]}>
-          <Pressable
-            style={styles.deleteButton}
-            onPress={handleBatchDelete}
-            accessibilityRole="button"
-            accessibilityLabel={`Delete ${selectedIds.size} selected`}
-          >
-            <Ionicons name="trash-outline" size={20} color={colors.textPrimary} />
-            <Text style={styles.deleteButtonText}>
-              Delete ({selectedIds.size})
-            </Text>
-          </Pressable>
+      {/* Bottom fade + floating delete + nav */}
+      <View style={styles.bottomContainer}>
+        <LinearGradient
+          colors={['transparent', `${colors.background}E6`, colors.background]}
+          style={styles.bottomGradient}
+        />
+
+        <View style={styles.bottomInner}>
+          {selectedIds.size > 0 && (
+            <Pressable
+              style={styles.deleteButton}
+              onPress={handleBatchDelete}
+              accessibilityRole="button"
+              accessibilityLabel={`Delete ${selectedIds.size} selected`}
+            >
+              <Ionicons name="trash" size={20} color={colors.textPrimary} />
+              <Text style={styles.deleteButtonText}>
+                Delete ({selectedIds.size})
+              </Text>
+            </Pressable>
+          )}
+
+          {/* Bottom nav pill */}
+          <View style={[styles.bottomNav, { paddingBottom: insets.bottom > 0 ? 0 : spacing.sm }]}>
+            <Pressable 
+              style={styles.navItem} 
+              onPress={() => router.push('/(tabs)/inbox')}
+            >
+              <Ionicons name="layers-outline" size={24} color={colors.textMuted} />
+              <Text style={styles.navLabel}>Stack</Text>
+            </Pressable>
+            <Pressable style={styles.navItem}>
+              <View style={styles.navIconActive}>
+                <Ionicons name="grid" size={24} color={colors.primary} />
+                <View style={styles.activeDot} />
+              </View>
+              <Text style={[styles.navLabel, styles.navLabelActive]}>Vault</Text>
+            </Pressable>
+            <Pressable style={styles.navItem}>
+              <Ionicons name="stats-chart-outline" size={24} color={colors.textMuted} />
+              <Text style={styles.navLabel}>Stats</Text>
+            </Pressable>
+          </View>
         </View>
-      )}
-
-      <BlurView 
-        intensity={40} 
-        tint="dark" 
-        style={[styles.bottomNav, { paddingBottom: insets.bottom + spacing.md }]}
-      >
-        <Pressable style={styles.navItem} onPress={() => router.push('/(tabs)/inbox')}>
-          <Ionicons name="layers-outline" size={24} color={colors.textMuted} />
-          <Text style={styles.navLabel}>Stack</Text>
-        </Pressable>
-        <Pressable style={styles.navItemActive}>
-          <Ionicons name="grid" size={24} color={colors.primary} />
-          <Text style={[styles.navLabel, { color: colors.primary }]}>Vault</Text>
-        </Pressable>
-        <Pressable style={styles.navItem}>
-          <Ionicons name="stats-chart-outline" size={24} color={colors.textMuted} />
-          <Text style={styles.navLabel}>Stats</Text>
-        </Pressable>
-      </BlurView>
+      </View>
     </View>
   )
 }
@@ -240,24 +280,36 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.lg,
+    backgroundColor: `${colors.background}F2`,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
+    fontFamily: fonts.display,
     textTransform: 'uppercase',
     letterSpacing: 2,
     color: colors.textPrimary,
+    textAlign: 'center',
   },
   filters: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.md,
+    flexGrow: 0,
     paddingBottom: spacing.md,
+  },
+  filtersContent: {
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
   },
   filterButton: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     borderRadius: radii.full,
     backgroundColor: colors.surface,
     borderWidth: 1,
@@ -265,10 +317,16 @@ const styles = StyleSheet.create({
   },
   filterButtonActive: {
     backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 15,
+    elevation: 8,
   },
   filterText: {
     fontSize: 12,
     fontWeight: '600',
+    fontFamily: fonts.display,
     textTransform: 'uppercase',
     letterSpacing: 1,
     color: colors.textMuted,
@@ -277,109 +335,13 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontWeight: '700',
   },
-  grid: {
-    flex: 1,
-  },
-  gridItem: {
-    width: GRID_SIZE,
-    height: GRID_SIZE,
-    backgroundColor: colors.surface,
-  },
-  thumbnail: {
-    width: '100%',
-    height: '100%',
-    opacity: 0.9,
-  },
-  thumbnailSelected: {
-    opacity: 0.6,
-  },
-  selectionOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderWidth: 2,
-    borderColor: colors.delete,
-  },
-  checkmark: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.delete,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  sizeBadge: {
-    position: 'absolute',
-    bottom: 8,
-    right: 8,
-    backgroundColor: 'rgba(15, 23, 42, 0.6)',
-    paddingHorizontal: spacing.xs,
-    paddingVertical: 2,
-    borderRadius: radii.sm,
-  },
-  sizeText: {
-    fontSize: 9,
-    fontFamily: fonts.mono,
-    color: colors.textPrimary,
-  },
-  batchActions: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    alignItems: 'center',
-  },
-  deleteButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.delete,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: radii.full,
-    ...shadows.glowRed,
-  },
-  deleteButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 2,
-    color: colors.textPrimary,
-  },
-  bottomNav: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    overflow: 'hidden',
-  },
-  navItem: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  navItemActive: {
-    alignItems: 'center',
-    gap: 4,
-  },
-  navLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.textMuted,
-  },
   tagFilters: {
-    flexDirection: 'row',
-    paddingHorizontal: spacing.md,
+    flexGrow: 0,
     paddingBottom: spacing.md,
+  },
+  tagFiltersContent: {
+    paddingHorizontal: spacing.md,
     gap: spacing.sm,
-    flexWrap: 'wrap',
   },
   tagButton: {
     paddingHorizontal: spacing.sm,
@@ -401,17 +363,169 @@ const styles = StyleSheet.create({
   tagButtonTextActive: {
     fontWeight: '700',
   },
-  tagBadge: {
+  gridBorder: {
+    flex: 1,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  grid: {
+    flex: 1,
+  },
+  gridContent: {
+    paddingBottom: 240,
+  },
+  gridItem: {
+    width: GRID_SIZE,
+    height: GRID_SIZE,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  thumbnail: {
+    width: '100%',
+    height: '100%',
+  },
+  selectionOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 2,
+    borderColor: 'rgba(239, 68, 68, 0.5)',
+  },
+  checkmark: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: colors.delete,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 20,
+  },
+  checkmarkEmpty: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    opacity: 0,
+  },
+  sizeBadge: {
     position: 'absolute',
     bottom: 8,
-    left: 8,
-    paddingHorizontal: spacing.xs,
+    right: 8,
+    backgroundColor: 'rgba(15, 23, 42, 0.6)',
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: radii.sm,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+    zIndex: 10,
   },
-  tagText: {
-    fontSize: 8,
+  sizeText: {
+    fontSize: 9,
+    fontFamily: fonts.mono,
+    color: 'rgba(255, 255, 255, 0.9)',
+  },
+  bottomContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 30,
+    pointerEvents: 'box-none',
+  },
+  bottomGradient: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 160,
+    pointerEvents: 'none',
+  },
+  bottomInner: {
+    alignItems: 'center',
+    paddingBottom: 32,
+    paddingHorizontal: spacing.lg,
+  },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.delete,
+    paddingHorizontal: 40,
+    paddingVertical: 20,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+    marginBottom: spacing.xl,
+    shadowColor: colors.delete,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 25,
+    elevation: 15,
+  },
+  deleteButtonText: {
+    fontSize: 18,
     fontWeight: '700',
+    fontFamily: fonts.display,
     textTransform: 'uppercase',
+    letterSpacing: 3,
+    color: colors.textPrimary,
+  },
+  bottomNav: {
+    width: '100%',
+    maxWidth: 380,
+    backgroundColor: 'rgba(30, 41, 59, 0.4)',
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.05)',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    alignItems: 'center',
+    paddingVertical: 12,
+    overflow: 'hidden',
+  },
+  navItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    paddingVertical: spacing.xs,
+  },
+  navIconActive: {
+    position: 'relative',
+  },
+  activeDot: {
+    position: 'absolute',
+    top: -1,
+    right: -1,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.primary,
+  },
+  navLabel: {
+    fontSize: 9,
+    fontWeight: '700',
+    fontFamily: fonts.display,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    color: colors.textMuted,
+  },
+  navLabelActive: {
+    color: colors.primary,
+    letterSpacing: 2,
   },
 })

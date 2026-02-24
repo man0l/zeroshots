@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { View, Text, StyleSheet, Pressable, Share, ActivityIndicator, Alert } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { colors, fonts, spacing, radii, shadows } from '../src/lib/theme'
+import { colors, fonts, spacing, radii } from '../src/lib/theme'
 import { useSessionStore } from '../src/state/session.store'
 import { useAuthStore } from '../src/state/auth.store'
 import { saveSessionToSupabase } from '../src/features/cleanup-session/saveSession'
@@ -12,7 +12,7 @@ import { saveSessionToSupabase } from '../src/features/cleanup-session/saveSessi
 export default function ReviewSessionScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { actions, queue, resetSession } = useSessionStore()
+  const { actions, queue, startTime, resetSession } = useSessionStore()
   const { user } = useAuthStore()
   const [isSaving, setIsSaving] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
@@ -20,30 +20,38 @@ export default function ReviewSessionScreen() {
   const stats = React.useMemo(() => {
     const deletedCount = actions.filter(a => a.action === 'delete').length
     const archivedCount = actions.filter(a => a.action === 'archive').length
-    const reviewedCount = actions.length
     const deletedAssets = actions
       .filter(a => a.action === 'delete')
       .map(a => queue.find(q => q.id === a.assetId))
       .filter(Boolean)
     const savedBytes = deletedAssets.reduce((sum, a) => sum + (a?.size || 0), 0)
+    const timeSpent = startTime ? Math.round((Date.now() - startTime) / 1000) : 0
     
-    return { deletedCount, archivedCount, reviewedCount, savedBytes }
-  }, [actions, queue])
+    return { deletedCount, archivedCount, savedBytes, timeSpent }
+  }, [actions, queue, startTime])
 
   const formatBytes = (bytes: number) => {
-    if (bytes === 0) return '0'
+    if (bytes === 0) return { value: '0', unit: 'MB' }
     const mb = bytes / (1024 * 1024)
     if (mb >= 1024) {
-      return `${(mb / 1024).toFixed(0)}GB`
+      return { value: `${(mb / 1024).toFixed(0)}`, unit: 'GB' }
     }
-    return `${mb.toFixed(0)}MB`
+    return { value: `${mb.toFixed(0)}`, unit: 'MB' }
+  }
+
+  const formatTime = (seconds: number) => {
+    if (seconds < 60) return `${seconds}s`
+    const m = Math.floor(seconds / 60)
+    const s = seconds % 60
+    return `${m}m${s > 0 ? `${s}s` : ''}`
   }
 
   const handleShare = async () => {
     Haptics.selectionAsync()
+    const { value, unit } = formatBytes(stats.savedBytes)
     try {
       await Share.share({
-        message: `I just cleaned up ${stats.deletedCount} screenshots and saved ${formatBytes(stats.savedBytes)} with Screenshot Organizer!`,
+        message: `I just cleaned up ${stats.deletedCount} screenshots and saved ${value} ${unit} with Screenshot Organizer!`,
       })
     } catch (error) {
       console.error(error)
@@ -52,7 +60,6 @@ export default function ReviewSessionScreen() {
 
   const handleFinish = async () => {
     if (isSaved) {
-      // Already saved, just navigate
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       resetSession()
       router.replace('/(tabs)/inbox')
@@ -67,13 +74,11 @@ export default function ReviewSessionScreen() {
     setIsSaving(true)
     
     try {
-      // Save session to Supabase
       await saveSessionToSupabase(user.id)
       
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
       setIsSaved(true)
       
-      // Show success feedback
       Alert.alert(
         'Session Saved!',
         `Your cleanup session has been saved to the cloud.`,
@@ -111,8 +116,17 @@ export default function ReviewSessionScreen() {
     }
   }
 
+  const { value: heroValue, unit: heroUnit } = formatBytes(stats.savedBytes)
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
+      {/* Decorative blur circles */}
+      <View style={styles.decorContainer}>
+        <View style={[styles.blurCircle, styles.blurRed]} />
+        <View style={[styles.blurCircle, styles.blurPurple]} />
+        <View style={[styles.blurCircle, styles.blurGray]} />
+      </View>
+
       <View style={styles.header}>
         <Pressable
           onPress={() => router.back()}
@@ -127,16 +141,16 @@ export default function ReviewSessionScreen() {
       </View>
 
       <View style={styles.content}>
+        {/* Hero storage display */}
         <View style={styles.heroContainer}>
           <Text style={styles.heroLabel}>Storage Reclaimed</Text>
-          <Text style={styles.heroValue}>
-            {formatBytes(stats.savedBytes)}
-            <Text style={styles.heroUnit}>
-              {stats.savedBytes >= 1024 * 1024 * 1024 ? 'GB' : 'MB'}
-            </Text>
-          </Text>
+          <View style={styles.heroRow}>
+            <Text style={styles.heroValue}>{heroValue}</Text>
+            <Text style={styles.heroUnit}>{heroUnit}</Text>
+          </View>
         </View>
 
+        {/* Stats grid */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
             <View style={[styles.statGlow, { backgroundColor: 'rgba(239, 68, 68, 0.3)' }]} />
@@ -147,22 +161,23 @@ export default function ReviewSessionScreen() {
 
           <View style={styles.statCard}>
             <View style={[styles.statGlow, { backgroundColor: 'rgba(139, 92, 246, 0.3)' }]} />
-            <Ionicons name="sparkles-outline" size={24} color={colors.archive} />
+            <Ionicons name="sparkles" size={24} color={colors.archive} />
             <Text style={styles.statValue}>{stats.archivedCount}</Text>
             <Text style={styles.statLabel}>Archived</Text>
           </View>
 
           <View style={styles.statCard}>
             <View style={[styles.statGlow, { backgroundColor: 'rgba(148, 163, 184, 0.2)' }]} />
-            <Ionicons name="flash-outline" size={24} color={colors.textMuted} />
-            <Text style={styles.statValue}>{stats.reviewedCount}</Text>
-            <Text style={styles.statLabel}>Reviewed</Text>
+            <Ionicons name="flash" size={24} color={colors.textMuted} />
+            <Text style={styles.statValue}>{formatTime(stats.timeSpent)}</Text>
+            <Text style={styles.statLabel}>Time</Text>
           </View>
         </View>
 
+        {/* Actions */}
         <View style={styles.actions}>
           <Pressable
-            style={[styles.finishButton, (isSaving || isSaved) && styles.finishButtonDisabled]}
+            style={[styles.finishButton, isSaving && styles.finishButtonSaving]}
             onPress={handleFinish}
             disabled={isSaving}
             accessibilityRole="button"
@@ -173,9 +188,11 @@ export default function ReviewSessionScreen() {
             ) : (
               <>
                 <Text style={styles.finishButtonText}>
-                  {isSaved ? 'SESSION SAVED ✓' : 'FINISH SESSION'}
+                  {isSaved ? 'SESSION SAVED' : 'FINISH SESSION'}
                 </Text>
-                {!isSaved && <Ionicons name="arrow-forward" size={20} color={colors.background} />}
+                {!isSaved && (
+                  <Ionicons name="arrow-forward" size={20} color={colors.background} />
+                )}
               </>
             )}
           </Pressable>
@@ -203,13 +220,47 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
+    overflow: 'hidden',
+  },
+  decorContainer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: 'hidden',
+  },
+  blurCircle: {
+    position: 'absolute',
+    borderRadius: 999,
+  },
+  blurRed: {
+    top: '40%',
+    left: '10%',
+    width: 192,
+    height: 192,
+    backgroundColor: 'rgba(239, 68, 68, 0.2)',
+    transform: [{ translateY: -96 }],
+  },
+  blurPurple: {
+    top: '40%',
+    left: '30%',
+    width: 256,
+    height: 256,
+    backgroundColor: 'rgba(139, 92, 246, 0.2)',
+    transform: [{ translateX: -128 }, { translateY: -128 }],
+  },
+  blurGray: {
+    top: '40%',
+    right: '10%',
+    width: 192,
+    height: 192,
+    backgroundColor: 'rgba(148, 163, 184, 0.1)',
+    transform: [{ translateY: -96 }],
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    zIndex: 20,
   },
   closeButton: {
     width: 40,
@@ -228,37 +279,48 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    zIndex: 10,
   },
   heroContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxl * 2,
+    marginBottom: spacing.xxl + spacing.md,
   },
   heroLabel: {
     fontSize: 10,
     fontWeight: '700',
-    letterSpacing: 3,
+    letterSpacing: 4,
     textTransform: 'uppercase',
     color: colors.primary,
     marginBottom: spacing.md,
   },
+  heroRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
   heroValue: {
-    fontSize: 72,
+    fontSize: 80,
     fontWeight: '700',
+    fontFamily: fonts.display,
     color: colors.textPrimary,
+    letterSpacing: -2,
     textShadowColor: 'rgba(255, 255, 255, 0.2)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 25,
   },
   heroUnit: {
-    fontSize: 24,
+    fontSize: 28,
+    fontWeight: '500',
+    fontFamily: fonts.mono,
     color: colors.textMuted,
-    marginLeft: spacing.xs,
+    marginLeft: 4,
   },
   statsGrid: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.xxl * 2,
+    gap: 12,
+    marginBottom: spacing.xxl + spacing.md,
+    width: '100%',
   },
   statCard: {
     flex: 1,
@@ -270,6 +332,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.1)',
     overflow: 'hidden',
+    padding: spacing.md,
   },
   statGlow: {
     position: 'absolute',
@@ -282,6 +345,7 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: '700',
+    fontFamily: fonts.display,
     color: colors.textPrimary,
     marginTop: spacing.sm,
   },
@@ -301,18 +365,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.textPrimary,
+    gap: 12,
+    backgroundColor: '#F1F5F9',
     height: 64,
     borderRadius: radii.lg,
-    ...shadows.glowSky,
+    // Tech shadow: 0 10px 0 0 #CBD5E1
+    shadowColor: '#CBD5E1',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    elevation: 10,
   },
-  finishButtonDisabled: {
-    backgroundColor: colors.keep,
+  finishButtonSaving: {
+    opacity: 0.7,
   },
   finishButtonText: {
     fontSize: 16,
     fontWeight: '700',
+    fontFamily: fonts.display,
     color: colors.background,
     letterSpacing: 1,
   },
@@ -321,6 +391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing.sm,
+    paddingVertical: spacing.sm,
   },
   shareButtonText: {
     fontSize: 12,
@@ -331,7 +402,8 @@ const styles = StyleSheet.create({
   },
   homeIndicator: {
     alignItems: 'center',
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.md,
+    paddingTop: spacing.sm,
   },
   homeIndicatorBar: {
     width: 128,

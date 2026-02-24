@@ -2,13 +2,11 @@ import React from 'react'
 import { View, Text, StyleSheet, Pressable, Dimensions } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { BlurView } from 'expo-blur'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { colors, fonts, spacing, radii, shadows } from '../src/lib/theme'
+import { LinearGradient } from 'expo-linear-gradient'
+import { colors, fonts, spacing, radii } from '../src/lib/theme'
 import { useEntitlementStore } from '../src/state/entitlement.store'
-
-const { width: SCREEN_WIDTH } = Dimensions.get('window')
 
 export default function PaywallScreen() {
   const router = useRouter()
@@ -27,24 +25,35 @@ export default function PaywallScreen() {
 
   return (
     <View style={styles.container}>
+      {/* Dark overlay backdrop */}
       <Pressable style={styles.backdrop} onPress={handleWait} />
       
+      {/* Glass modal from bottom */}
       <View style={[styles.modal, { paddingBottom: insets.bottom + spacing.xl }]}>
+        {/* Drag handle */}
         <View style={styles.handle} />
 
         <View style={styles.content}>
+          {/* Progress ring with lock icon */}
           <View style={styles.iconContainer}>
+            {/* Glow behind the ring */}
             <View style={styles.iconGlow} />
+            
+            {/* Outer ring */}
             <View style={styles.progressRing}>
+              {/* Inner lock circle */}
               <View style={styles.lockCircle}>
                 <Ionicons name="lock-closed" size={36} color={colors.primary} />
               </View>
             </View>
+
+            {/* "Capacity Full" badge */}
             <View style={styles.capacityBadge}>
               <Text style={styles.capacityText}>Capacity Full</Text>
             </View>
           </View>
 
+          {/* Title and description */}
           <View style={styles.textContainer}>
             <Text style={styles.title}>
               Trust Capacity{'\n'}
@@ -55,29 +64,39 @@ export default function PaywallScreen() {
             </Text>
           </View>
 
+          {/* Action buttons */}
           <View style={styles.actions}>
+            {/* Gradient upgrade button: cyan → purple */}
             <Pressable
-              style={styles.upgradeButton}
+              style={styles.upgradeButtonOuter}
               onPress={handleUpgrade}
               accessibilityRole="button"
               accessibilityLabel="Unlock Unlimited"
             >
-              <View style={styles.upgradeContent}>
-                <Ionicons name="flash" size={24} color={colors.textPrimary} />
-                <Text style={styles.upgradeText}>Unlock Unlimited</Text>
-              </View>
-              <View style={styles.priceBadge}>
-                <Text style={styles.priceText}>$4.99</Text>
-              </View>
+              <LinearGradient
+                colors={['#06B6D4', '#8B5CF6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.upgradeGradient}
+              >
+                <View style={styles.upgradeContent}>
+                  <Ionicons name="flash" size={24} color={colors.textPrimary} />
+                  <Text style={styles.upgradeText}>Unlock Unlimited</Text>
+                </View>
+                <View style={styles.priceBadge}>
+                  <Text style={styles.priceText}>$4.99</Text>
+                </View>
+              </LinearGradient>
             </Pressable>
 
+            {/* Wait option */}
             <Pressable
               style={styles.waitButton}
               onPress={handleWait}
               accessibilityRole="button"
               accessibilityLabel="Wait 24h for next session"
             >
-              <Ionicons name="time-outline" size={18} color={colors.textMuted} />
+              <Ionicons name="time-outline" size={18} color="rgba(100, 116, 139, 1)" />
               <Text style={styles.waitText}>Wait 24h for next session</Text>
             </Pressable>
           </View>
@@ -101,8 +120,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 48,
     borderTopRightRadius: 48,
     borderWidth: 1,
+    borderBottomWidth: 0,
     borderColor: 'rgba(51, 65, 85, 0.5)',
-    overflow: 'hidden',
+    padding: spacing.xl,
   },
   handle: {
     width: 40,
@@ -110,11 +130,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(100, 116, 139, 0.4)',
     borderRadius: 2,
     alignSelf: 'center',
-    marginTop: spacing.xl,
-    marginBottom: spacing.xxl,
+    marginBottom: 40,
   },
   content: {
-    paddingHorizontal: spacing.xl,
     alignItems: 'center',
   },
   iconContainer: {
@@ -123,11 +141,10 @@ const styles = StyleSheet.create({
     height: 128,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xl,
+    marginBottom: 32,
   },
   iconGlow: {
-    position: 'absolute',
-    inset: 0,
+    ...StyleSheet.absoluteFillObject,
     borderRadius: 64,
     backgroundColor: 'rgba(56, 189, 248, 0.2)',
   },
@@ -139,6 +156,11 @@ const styles = StyleSheet.create({
     borderColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
+    elevation: 10,
   },
   lockCircle: {
     width: 80,
@@ -149,36 +171,49 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(56, 189, 248, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 12,
   },
   capacityBadge: {
     position: 'absolute',
     bottom: -4,
     backgroundColor: colors.primary,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: 10,
     paddingVertical: 2,
     borderRadius: radii.full,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.5,
+    shadowRadius: 15,
+    elevation: 8,
   },
   capacityText: {
     fontSize: 10,
     fontWeight: '900',
+    fontFamily: fonts.display,
     color: colors.backgroundDeep,
-    letterSpacing: 0.5,
+    letterSpacing: -0.5,
+    textTransform: 'uppercase',
   },
   textContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
-    paddingHorizontal: spacing.md,
+    marginBottom: 40,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    fontSize: 32,
+    fontSize: 30,
     fontWeight: '700',
+    fontFamily: fonts.display,
     textAlign: 'center',
     color: colors.textPrimary,
-    lineHeight: 40,
+    lineHeight: 38,
+    letterSpacing: -0.5,
   },
   titleHighlight: {
     color: colors.primary,
-    textShadowColor: colors.primary,
+    textShadowColor: 'rgba(56, 189, 248, 0.4)',
     textShadowOffset: { width: 0, height: 0 },
     textShadowRadius: 8,
   },
@@ -192,17 +227,25 @@ const styles = StyleSheet.create({
   },
   actions: {
     width: '100%',
-    gap: spacing.md,
+    gap: 20,
+    paddingHorizontal: spacing.sm,
   },
-  upgradeButton: {
+  upgradeButtonOuter: {
+    borderRadius: 24,
+    overflow: 'hidden',
+    shadowColor: colors.archive,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 30,
+    elevation: 15,
+  },
+  upgradeGradient: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     height: 64,
+    paddingHorizontal: spacing.xl,
     borderRadius: 24,
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
-    overflow: 'hidden',
   },
   upgradeContent: {
     flexDirection: 'row',
@@ -210,19 +253,22 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   upgradeText: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
+    fontFamily: fonts.display,
     color: colors.textPrimary,
+    letterSpacing: -0.5,
   },
   priceBadge: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.xs,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
     borderRadius: radii.lg,
   },
   priceText: {
     fontSize: 14,
     fontWeight: '700',
+    fontFamily: fonts.display,
     color: colors.textPrimary,
   },
   waitButton: {
@@ -234,6 +280,7 @@ const styles = StyleSheet.create({
   },
   waitText: {
     fontSize: 14,
-    color: colors.textMuted,
+    color: 'rgba(100, 116, 139, 1)',
+    fontWeight: '500',
   },
 })
