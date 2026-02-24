@@ -228,7 +228,8 @@ export default function InboxScreen() {
     )
   }
 
-  const daysOld = Math.floor((Date.now() - currentAsset.creationTime) / (1000 * 60 * 60 * 24))
+  const createdAt = Number(currentAsset.creationTime || Date.now())
+  const daysOld = Math.max(0, Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24)))
   const trustPercent = entitlement === 'free' ? (deletesRemaining / 15) * 100 : 100
 
   return (
@@ -269,7 +270,7 @@ export default function InboxScreen() {
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.card, animatedStyle]}>
             <Image 
-              source={{ uri: currentAsset.uri }}
+              source={currentAsset.uri ? { uri: currentAsset.uri } : undefined}
               style={styles.cardImage}
               contentFit="cover"
             />

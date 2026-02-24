@@ -19,7 +19,7 @@ export default function TabLayout() {
           height: 72,
         },
         tabBarBackground: () =>
-          Platform.OS === 'web'
+          Platform.OS !== 'ios'
             ? (
               <View
                 pointerEvents="none"
