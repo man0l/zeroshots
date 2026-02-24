@@ -85,17 +85,22 @@ https://api.zenmanager.eu/auth/v1/callback
 
 ## 7. Run the migration on supabase-db17
 
-The CI `migrations` job handles this automatically on every push.
-For the initial run, trigger it manually or apply directly:
+The CI `migrations` job uses `supabase db push --db-url` which is idempotent --
+it only applies migrations not yet tracked in `supabase_migrations.schema_migrations`.
+
+For the initial one-time run, trigger the workflow manually:
+`Actions → Deploy Functions → Run workflow`
+
+Or apply directly:
 
 ```bash
-# From the Contabo server (or any machine with network access to supabase-db17):
-cat 003_screenshot_organizer_schema.sql | \
+# Using Supabase CLI (preferred — tracks which migrations have been applied)
+supabase db push --db-url "postgresql://postgres:<POSTGRES_PASSWORD>@<contabo-ip>:54322/postgres"
+
+# Or via docker exec (manual fallback)
+cat supabase/migrations/20260224000000_screenshot_organizer_schema.sql | \
   docker exec -i supabase-db17 psql -U postgres -d postgres
 ```
-
-Or trigger the GitHub Actions workflow manually:
-`Actions → Deploy Functions → Run workflow`
 
 ## 8. Verify production
 

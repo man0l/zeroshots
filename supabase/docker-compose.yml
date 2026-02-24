@@ -223,8 +223,7 @@ services:
       SUPABASE_ANON_KEY: ${ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SERVICE_ROLE_KEY}
       SUPABASE_DB_URL: postgresql://postgres:${POSTGRES_PASSWORD}@db:5432/postgres
-      # Add replica host if you have one
-      # SUPABASE_DB_URL_REPLICA: postgresql://postgres:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DB}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
       PORT: 54321
     volumes:
       - ./functions:/home/deno/functions:Z
@@ -296,6 +295,7 @@ services:
       JWT_EXP: ${JWT_EXPIRY}
     volumes:
       - ./volumes/db/data:/var/lib/postgresql/data:Z
+      - ./local-migrations:/docker-entrypoint-initdb.d/migrations-local:Z
       - ./migrations:/docker-entrypoint-initdb.d/migrations-custom:Z
 
   vector:

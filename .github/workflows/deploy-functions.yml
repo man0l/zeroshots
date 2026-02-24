@@ -52,8 +52,10 @@ jobs:
           cache-to: type=gha,mode=max
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # Apply database migrations to the production supabase-db17 instance.
-  # Uses supabase db push which is idempotent — only unapplied migrations run.
+  # Apply production migrations to supabase-db17 on Contabo.
+  # Uses `supabase db push` which is idempotent — only applies migrations
+  # not yet in supabase_migrations.schema_migrations.
+  # Only files in supabase/migrations/ are pushed (not supabase/local-migrations/).
   # Requires SUPABASE_DB_URL secret:
   #   postgresql://postgres:<password>@<contabo-ip>:54322/postgres
   # ─────────────────────────────────────────────────────────────────────────────

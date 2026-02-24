@@ -1,0 +1,3 @@
+# Minimal config for supabase db push (migrations only).
+# Full Supabase runs self-hosted on Contabo — this config is not used for that.
+project_id = "screenshot-organizer"

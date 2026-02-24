@@ -17,8 +17,9 @@ export interface EventProperties {
 export function trackEvent(name: EventName, properties?: EventProperties): void {
   console.log('[Analytics]', name, properties)
   
-  // In production, send to Supabase edge function
-  // await supabase.functions.invoke('event-ingest', {
+  // In production, send to Supabase edge function:
+  // import { supabase, edgeFn } from '../../lib/supabase/client'
+  // await supabase.functions.invoke(edgeFn('event-ingest'), {
   //   body: { event_name: name, properties }
   // })
 }

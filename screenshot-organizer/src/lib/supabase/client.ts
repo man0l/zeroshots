@@ -46,7 +46,7 @@ export type Json =
   | Json[]
 
 export interface Database {
-  public: {
+  screenshot_organizer: {
     Tables: {
       users: {
         Row: {
