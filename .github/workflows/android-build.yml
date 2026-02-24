@@ -23,7 +23,7 @@ permissions:
 
 jobs:
   build:
-    name: Debug APK
+    name: Release APK
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -64,10 +64,10 @@ jobs:
         with:
           cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      - name: Build debug APK (arm64 only)
+      - name: Build release APK (arm64 only)
         working-directory: screenshot-organizer/android
         run: >
-          ./gradlew assembleDebug
+          ./gradlew assembleRelease
           -PreactNativeArchitectures=arm64-v8a
           -Dorg.gradle.jvmargs=-Xmx4g
           -Dorg.gradle.parallel=true
@@ -79,8 +79,8 @@ jobs:
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
-          name: debug-apk
-          path: screenshot-organizer/android/app/build/outputs/apk/debug/app-debug.apk
+          name: release-apk
+          path: screenshot-organizer/android/app/build/outputs/apk/release/app-release.apk
           retention-days: 7
 
       - name: Create tag and release
@@ -90,11 +90,11 @@ jobs:
         run: |
           TAG="android-v${{ steps.version.outputs.app_version }}-build.${{ github.run_number }}"
           SHORT_SHA="${GITHUB_SHA::7}"
-          APK_PATH="screenshot-organizer/android/app/build/outputs/apk/debug/app-debug.apk"
+          APK_PATH="screenshot-organizer/android/app/build/outputs/apk/release/app-release.apk"
 
           gh release create "$TAG" \
-            "$APK_PATH#screenshot-organizer-debug.apk" \
-            --title "Android Debug Build #${{ github.run_number }}" \
+            "$APK_PATH#screenshot-organizer-release.apk" \
+            --title "Android Release Build #${{ github.run_number }}" \
             --notes "**Version:** ${{ steps.version.outputs.app_version }}
           **Commit:** [\`${SHORT_SHA}\`](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
           **Branch:** \`${{ github.ref_name }}\`
