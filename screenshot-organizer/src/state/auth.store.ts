@@ -136,7 +136,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     })
     if (oauthError) return { error: oauthError }
     if (!data?.url) return { error: new Error('No OAuth URL returned') }
-    const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo)
+    // Auth session should complete when browser returns to app URL, not proxy URL.
+    const result = await WebBrowser.openAuthSessionAsync(data.url, appRedirectBase)
     if (result.type !== 'success' || !result.url) {
       return { error: result.type === 'cancel' ? null : new Error('Sign in was cancelled or failed') }
     }

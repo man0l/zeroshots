@@ -14,8 +14,9 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
 ]
 
 export function useGallery() {
+  const isWeb = Platform.OS === 'web'
   const [assets, setAssets] = useState<ClassifiedAsset[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const [isLoading, setIsLoading] = useState(!isWeb)
   const [isClassifying, setIsClassifying] = useState(false)
   const [permissionStatus, requestPermission] = Platform.OS === 'web'
     ? [{ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse, async () => ({ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse)]
@@ -31,7 +32,7 @@ export function useGallery() {
     if (permissionStatus?.granted) {
       loadScreenshots()
     }
-  }, [permissionStatus?.granted])
+  }, [isWeb, permissionStatus?.granted])
 
   const loadScreenshots = async () => {
     try {
@@ -116,12 +117,19 @@ export function useGallery() {
     return assets.filter(asset => asset.tags?.includes(tag))
   }, [assets])
 
+  const requestGalleryPermission = useCallback(async () => {
+    if (isWeb) {
+      return null
+    }
+    return requestPermission()
+  }, [isWeb, requestPermission])
+
   return {
     assets,
     isLoading,
     isClassifying,
     permissionStatus,
-    requestPermission,
+    requestPermission: requestGalleryPermission,
     error,
     loadScreenshots,
     deleteAsset,

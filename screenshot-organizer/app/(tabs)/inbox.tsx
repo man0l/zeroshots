@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, Dimensions, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Dimensions, Pressable, Platform, Linking } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { GestureDetector, Gesture } from 'react-native-gesture-handler'
@@ -22,8 +22,15 @@ const SWIPE_OUT = SCREEN_WIDTH * 0.8
 const CARD_WIDTH = SCREEN_WIDTH - 32
 
 export default function InboxScreen() {
+  const isWebPreview = Platform.OS === 'web'
+  const expoGoUrl = React.useMemo(() => {
+    if (!isWebPreview || typeof window === 'undefined') return null
+    return `exp://${window.location.host}`
+  }, [isWebPreview])
   const router = useRouter()
   const { assets, isLoading, permissionStatus, requestPermission } = useGallery()
+  const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
+  const [webMessage, setWebMessage] = React.useState<string | null>(null)
   const { 
     queue, 
     currentIndex, 
@@ -100,29 +107,100 @@ export default function InboxScreen() {
 
   const currentAsset = queue[currentIndex]
 
-  if (!permissionStatus?.granted) {
+  const handleRequestPermission = useCallback(async () => {
+    const result = await requestPermission()
+    if (!result?.granted) {
+      if (result?.canAskAgain === false) {
+        setPermissionMessage('Permission denied. Tap "Open Settings" to enable Photos access.')
+      } else {
+        setPermissionMessage('Permission not granted. Please allow access to continue.')
+      }
+    } else {
+      setPermissionMessage(null)
+    }
+  }, [requestPermission])
+
+  if (!permissionStatus?.granted && !isWebPreview) {
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Gallery Access Required</Text>
           <Pressable
             style={styles.permissionButton}
-            onPress={() => requestPermission()}
+            onPress={handleRequestPermission}
             accessibilityRole="button"
             accessibilityLabel="Grant Permission"
           >
             <Text style={styles.permissionButtonText}>Grant Permission</Text>
           </Pressable>
+          {permissionStatus?.canAskAgain === false && (
+            <Pressable
+              style={[styles.permissionButton, styles.secondaryPermissionButton]}
+              onPress={() => Linking.openSettings()}
+              accessibilityRole="button"
+              accessibilityLabel="Open Settings"
+            >
+              <Text style={[styles.permissionButtonText, styles.secondaryPermissionButtonText]}>
+                Open Settings
+              </Text>
+            </Pressable>
+          )}
+          {permissionMessage && (
+            <Text style={styles.permissionHelpText}>{permissionMessage}</Text>
+          )}
         </View>
       </View>
     )
   }
 
-  if (isLoading || !isRunning) {
+  if (isLoading) {
     return (
       <View style={styles.container}>
         <View style={styles.emptyState}>
           <Text style={styles.emptyTitle}>Loading...</Text>
+        </View>
+      </View>
+    )
+  }
+
+  if (!isRunning) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyTitle}>{isWebPreview ? 'Web Preview Mode' : 'No Screenshots Found'}</Text>
+          <Text style={styles.emptySubtitle}>
+            {isWebPreview
+              ? 'Browser preview cannot access your device gallery. Open this app in native Expo Go to triage real screenshots.'
+              : 'No screenshots are available to review yet.'}
+          </Text>
+          {isWebPreview && expoGoUrl && (
+            <Pressable
+              style={styles.permissionButton}
+              onPress={async () => {
+                try {
+                  await Linking.openURL(expoGoUrl)
+                  setWebMessage(null)
+                } catch {
+                  setWebMessage('Could not open Expo Go automatically. Open Expo Go and scan/run the exp:// URL manually.')
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Open in Expo Go"
+            >
+              <Text style={styles.permissionButtonText}>Open in Expo Go</Text>
+            </Pressable>
+          )}
+          <Pressable
+            style={[styles.finishButton, isWebPreview && styles.webSecondaryButton]}
+            onPress={() => router.push('/library')}
+            accessibilityRole="button"
+            accessibilityLabel="Open Vault"
+          >
+            <Text style={[styles.finishButtonText, isWebPreview && styles.webSecondaryButtonText]}>Open Vault</Text>
+          </Pressable>
+          {webMessage && (
+            <Text style={styles.permissionHelpText}>{webMessage}</Text>
+          )}
         </View>
       </View>
     )
@@ -577,6 +655,15 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     color: colors.background,
   },
+  webSecondaryButton: {
+    marginTop: spacing.md,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.textPrimary,
+  },
+  webSecondaryButtonText: {
+    color: colors.textPrimary,
+  },
   permissionButton: {
     backgroundColor: colors.primary,
     paddingHorizontal: spacing.xl,
@@ -587,5 +674,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: colors.background,
+  },
+  secondaryPermissionButton: {
+    marginTop: spacing.md,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  secondaryPermissionButtonText: {
+    color: colors.primary,
+  },
+  permissionHelpText: {
+    marginTop: spacing.md,
+    color: colors.textMuted,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 18,
+    maxWidth: 320,
   },
 })

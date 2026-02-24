@@ -9,6 +9,11 @@ import { getSupabaseUrl } from '../../src/lib/supabase/client'
 import { colors, fonts, spacing, radii } from '../../src/lib/theme'
 
 export default function SignInScreen() {
+  const isWeb = Platform.OS === 'web'
+  const expoGoUrl = React.useMemo(() => {
+    if (!isWeb || typeof window === 'undefined') return null
+    return `exp://${window.location.host}`
+  }, [isWeb])
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [email, setEmail] = useState('')
@@ -66,6 +71,10 @@ export default function SignInScreen() {
 
   const handleGoogleSignIn = async () => {
     setError(null)
+    if (isWeb) {
+      setError('Google sign-in must be done in Expo Go (native), not in browser preview. Tap "Open in Expo Go" below.')
+      return
+    }
     setGoogleLoading(true)
     const result = await useAuthStore.getState().signInWithGoogle()
     setGoogleLoading(false)
@@ -114,7 +123,7 @@ export default function SignInScreen() {
         <Pressable
           style={[styles.googleButton, googleLoading && styles.buttonDisabled]}
           onPress={handleGoogleSignIn}
-          disabled={googleLoading}
+          disabled={googleLoading || isWeb}
           accessibilityRole="button"
           accessibilityLabel="Sign in with Google"
         >
@@ -127,6 +136,16 @@ export default function SignInScreen() {
             </View>
           )}
         </Pressable>
+        {isWeb && expoGoUrl && (
+          <Pressable
+            style={[styles.googleButton, styles.openExpoButton]}
+            onPress={() => Linking.openURL(expoGoUrl)}
+            accessibilityRole="button"
+            accessibilityLabel="Open in Expo Go"
+          >
+            <Text style={styles.openExpoButtonText}>Open in Expo Go</Text>
+          </Pressable>
+        )}
 
         <View style={styles.divider}>
           <View style={styles.dividerLine} />
@@ -343,6 +362,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: colors.textPrimary,
+  },
+  openExpoButton: {
+    marginTop: spacing.sm,
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  openExpoButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.background,
   },
   switchButton: {
     alignItems: 'center',

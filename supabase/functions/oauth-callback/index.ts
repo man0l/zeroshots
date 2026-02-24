@@ -29,12 +29,15 @@ serve(async (req) => {
   const url = new URL(req.url)
   const code = url.searchParams.get('code')
   const state = url.searchParams.get('state')
+  const appRedirect = url.searchParams.get('app_redirect')
   const error = url.searchParams.get('error_description') ?? url.searchParams.get('error')
-
-  const stateIsValid = state && isAllowedRedirect(state)
+  const appRedirectBase =
+    appRedirect && /^(https?|exp):\/\//i.test(appRedirect)
+      ? appRedirect.replace(/\/?$/, '')
+      : null
 
   if (error) {
-    const base = stateIsValid ? state!.replace(/\/?$/, '') : `${APP_SCHEME}://auth/callback`
+    const base = appRedirectBase ?? (state && /^(https?|exp):\/\//i.test(state) ? state.replace(/\/?$/, '') : `${APP_SCHEME}://auth/callback`)
     const redirect = `${base}?error=${encodeURIComponent(error)}`
     return Response.redirect(redirect, 302)
   }
@@ -48,8 +51,12 @@ serve(async (req) => {
   }
 
   const encoded = base64UrlEncode(code)
-  const redirect = stateIsValid
-    ? `${state!.replace(/\/?$/, '')}/${encoded}`
-    : `${APP_SCHEME}://auth/callback/${encoded}`
+  // If state is the app's redirect base (e.g. exp://... for Expo Go), redirect there so the app receives the code
+  const redirect =
+    appRedirectBase
+      ? `${appRedirectBase}/${encoded}`
+      : state && /^(https?|exp):\/\//i.test(state)
+      ? `${state.replace(/\/?$/, '')}/${encoded}`
+      : `${APP_SCHEME}://auth/callback/${encoded}`
   return Response.redirect(redirect, 302)
 })
