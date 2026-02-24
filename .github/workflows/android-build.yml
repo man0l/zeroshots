@@ -18,6 +18,9 @@ defaults:
   run:
     working-directory: screenshot-organizer
 
+permissions:
+  contents: write
+
 jobs:
   build:
     name: Debug APK
