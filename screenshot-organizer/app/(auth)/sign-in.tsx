@@ -18,7 +18,7 @@ export default function SignInScreen() {
   const [googleLoading, setGoogleLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
-  const { createSessionFromUrl } = useAuthStore()
+  const { createSessionFromUrl, backendUnreachable } = useAuthStore()
 
   // Handle OAuth / magic link redirect into app
   useEffect(() => {
@@ -92,6 +92,12 @@ export default function SignInScreen() {
         </View>
 
         <View style={styles.form}>
+        {backendUnreachable && !error && (
+          <View style={styles.warningBanner}>
+            <Text style={styles.warningText}>Cannot reach the backend at {getSupabaseUrl()}. Check that Supabase is running.</Text>
+          </View>
+        )}
+
         {error && (
           <View style={styles.errorBanner}>
             <Text style={styles.errorText}>{error}</Text>
@@ -277,6 +283,17 @@ const styles = StyleSheet.create({
   },
   successText: {
     color: colors.keep,
+    fontSize: 14,
+  },
+  warningBanner: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.3)',
+    borderRadius: radii.md,
+    padding: spacing.md,
+  },
+  warningText: {
+    color: '#FBBF24',
     fontSize: 14,
   },
   button: {

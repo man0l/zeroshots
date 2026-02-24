@@ -40,7 +40,12 @@ export default function OnboardingScreen() {
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
   const flatListRef = useRef<FlatList>(null)
-  const { setOnboarded } = useAuthStore()
+  const { completeOnboarding } = useAuthStore()
+
+  const finishOnboarding = async () => {
+    await completeOnboarding()
+    router.replace('/(tabs)/inbox')
+  }
 
   const handleNext = async () => {
     if (currentIndex < ONBOARDING_SLIDES.length - 1) {
@@ -50,11 +55,9 @@ export default function OnboardingScreen() {
       })
       setCurrentIndex(currentIndex + 1)
     } else {
-      // Request permission on last slide
       const { status } = await MediaLibrary.requestPermissionsAsync()
       if (status === 'granted') {
-        setOnboarded(true)
-        router.replace('/(tabs)/inbox')
+        await finishOnboarding()
       } else {
         Alert.alert(
           'Permission Required',
@@ -66,8 +69,7 @@ export default function OnboardingScreen() {
   }
 
   const handleSkip = () => {
-    setOnboarded(true)
-    router.replace('/(tabs)/inbox')
+    finishOnboarding()
   }
 
   const renderSlide = ({ item }: { item: typeof ONBOARDING_SLIDES[0] }) => (

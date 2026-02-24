@@ -242,28 +242,6 @@ export default function LibraryScreen() {
               </Text>
             </Pressable>
           )}
-
-          {/* Bottom nav pill */}
-          <View style={[styles.bottomNav, { paddingBottom: insets.bottom > 0 ? 0 : spacing.sm }]}>
-            <Pressable 
-              style={styles.navItem} 
-              onPress={() => router.push('/(tabs)/inbox')}
-            >
-              <Ionicons name="layers-outline" size={24} color={colors.textMuted} />
-              <Text style={styles.navLabel}>Stack</Text>
-            </Pressable>
-            <Pressable style={styles.navItem}>
-              <View style={styles.navIconActive}>
-                <Ionicons name="grid" size={24} color={colors.primary} />
-                <View style={styles.activeDot} />
-              </View>
-              <Text style={[styles.navLabel, styles.navLabelActive]}>Vault</Text>
-            </Pressable>
-            <Pressable style={styles.navItem}>
-              <Ionicons name="stats-chart-outline" size={24} color={colors.textMuted} />
-              <Text style={styles.navLabel}>Stats</Text>
-            </Pressable>
-          </View>
         </View>
       </View>
     </View>
@@ -456,7 +434,7 @@ const styles = StyleSheet.create({
   },
   bottomInner: {
     alignItems: 'center',
-    paddingBottom: 32,
+    paddingBottom: 100,
     paddingHorizontal: spacing.lg,
   },
   deleteButton: {
@@ -483,49 +461,5 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3,
     color: colors.textPrimary,
-  },
-  bottomNav: {
-    width: '100%',
-    maxWidth: 380,
-    backgroundColor: 'rgba(30, 41, 59, 0.4)',
-    borderRadius: 24,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingVertical: 12,
-    overflow: 'hidden',
-  },
-  navItem: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    paddingVertical: spacing.xs,
-  },
-  navIconActive: {
-    position: 'relative',
-  },
-  activeDot: {
-    position: 'absolute',
-    top: -1,
-    right: -1,
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.primary,
-  },
-  navLabel: {
-    fontSize: 9,
-    fontWeight: '700',
-    fontFamily: fonts.display,
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    color: colors.textMuted,
-  },
-  navLabelActive: {
-    color: colors.primary,
-    letterSpacing: 2,
   },
 })

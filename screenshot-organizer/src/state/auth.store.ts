@@ -55,6 +55,7 @@ interface AuthState {
   user: User | null
   isLoading: boolean
   isOnboarded: boolean
+  backendUnreachable: boolean
   
   setSession: (session: Session | null) => void
   setUser: (user: User | null) => void
@@ -66,6 +67,7 @@ interface AuthState {
   createSessionFromUrl: (url: string) => Promise<{ error: Error | null }>
   signOut: () => Promise<void>
   checkOnboarding: () => Promise<void>
+  completeOnboarding: () => Promise<void>
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -73,6 +75,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   isOnboarded: false,
+  backendUnreachable: false,
 
   setSession: (session) => {
     set({ session, user: session?.user ?? null })
@@ -150,7 +153,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
     if (urlError) return { error: new Error(urlError) }
 
-    // PKCE: redirect has ?code=... (works on Android; hash is often stripped)
     if (code) {
       const { data, error } = await supabase.auth.exchangeCodeForSession(code)
       if (error) return { error }
@@ -159,7 +161,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error: null }
     }
 
-    // Implicit: redirect has #access_token=... (e.g. web)
+    // Legacy implicit flow fallback (access_token in hash fragment)
     if (access_token) {
       const { error } = await supabase.auth.setSession({
         access_token,
@@ -185,37 +187,53 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const { user } = get()
     if (!user) return
 
-    // Check if user has completed onboarding by looking at their profile
     const { data } = await supabase
       .from('users')
-      .select('created_at')
+      .select('is_onboarded')
       .eq('id', user.id)
       .single()
 
-    // Consider onboarded if user record exists and is older than 1 minute
     if (data) {
-      const createdAt = new Date(data.created_at)
-      const oneMinuteAgo = new Date(Date.now() - 60000)
-      set({ isOnboarded: createdAt < oneMinuteAgo })
+      set({ isOnboarded: data.is_onboarded })
     }
+  },
+
+  completeOnboarding: async () => {
+    const { user } = get()
+    if (!user) return
+
+    await supabase
+      .from('users')
+      .update({ is_onboarded: true })
+      .eq('id', user.id)
+
+    set({ isOnboarded: true })
   },
 }))
 
-// Initialize auth state — always clear loading so app never gets stuck (e.g. when Supabase is unreachable on Android)
 const AUTH_INIT_TIMEOUT_MS = 5000
 
 function initAuth() {
-  const timeout = new Promise<void>((resolve) => {
-    setTimeout(() => resolve(), AUTH_INIT_TIMEOUT_MS)
-  })
+  let resolved = false
   const sessionPromise = supabase.auth.getSession().then(({ data: { session } }) => {
+    resolved = true
     useAuthStore.getState().setSession(session)
     if (session?.user) {
       useAuthStore.getState().checkOnboarding()
     }
   })
+  const timeout = new Promise<void>((resolve) => {
+    setTimeout(() => {
+      if (!resolved) {
+        useAuthStore.setState({ backendUnreachable: true })
+      }
+      resolve()
+    }, AUTH_INIT_TIMEOUT_MS)
+  })
   Promise.race([sessionPromise, timeout])
-    .catch(() => { /* ignore: show sign-in and let user retry */ })
+    .catch(() => {
+      useAuthStore.setState({ backendUnreachable: true })
+    })
     .finally(() => {
       useAuthStore.getState().setLoading(false)
     })

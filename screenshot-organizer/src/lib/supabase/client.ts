@@ -20,7 +20,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: Platform.OS === 'web',
-    flowType: (Platform.OS === 'web' ? 'implicit' : 'pkce') as 'implicit' | 'pkce',
+    flowType: 'pkce',
   },
 })
 
@@ -41,18 +41,21 @@ export interface Database {
           email: string
           created_at: string
           timezone: string | null
+          is_onboarded: boolean
         }
         Insert: {
           id?: string
           email: string
           created_at?: string
           timezone?: string | null
+          is_onboarded?: boolean
         }
         Update: {
           id?: string
           email?: string
           created_at?: string
           timezone?: string | null
+          is_onboarded?: boolean
         }
       }
       subscriptions: {

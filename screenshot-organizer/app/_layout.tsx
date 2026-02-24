@@ -2,12 +2,15 @@ import { Stack, useRouter, useSegments } from 'expo-router'
 import { StatusBar } from 'expo-status-bar'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { useFonts } from 'expo-font'
-import { View, ActivityIndicator } from 'react-native'
+import { View, ActivityIndicator, Platform } from 'react-native'
 import { useEffect, useState } from 'react'
 import { colors } from '../src/lib/theme'
 import { useAuthStore } from '../src/state/auth.store'
 
 const BOOTSTRAP_TIMEOUT_MS = 5000
+
+// DEV_BYPASS_AUTH: skip auth redirect on web so screens can be previewed without Supabase
+const DEV_BYPASS_AUTH = __DEV__ && Platform.OS === 'web'
 
 export default function RootLayout() {
   const [bootstrapTimedOut, setBootstrapTimedOut] = useState(false)
@@ -21,7 +24,6 @@ export default function RootLayout() {
   const router = useRouter()
   const { session, isLoading, isOnboarded } = useAuthStore()
 
-  // Don't block forever: if fonts or auth hang (known on some Android builds), show app after timeout
   const isReady = (fontsLoaded && !isLoading) || bootstrapTimedOut
 
   useEffect(() => {
@@ -29,10 +31,15 @@ export default function RootLayout() {
     return () => clearTimeout(t)
   }, [])
 
-  // Native splash hides when first frame renders; no expo-splash-screen import to avoid Metro resolve errors on some Android setups
-
   useEffect(() => {
     if (!isReady) return
+    if (DEV_BYPASS_AUTH) {
+      const inTabs = segments[0] === '(tabs)'
+      if (!inTabs && segments[0] !== 'review-session' && segments[0] !== 'paywall') {
+        router.replace('/(tabs)/inbox')
+      }
+      return
+    }
 
     const inAuthGroup = segments[0] === '(auth)'
 

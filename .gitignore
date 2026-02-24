@@ -53,3 +53,4 @@ supabase/volumes/
 # Build artifacts
 *.pem
 mcp_jobs.sqlite
+.playwright-mcp/
