@@ -21,7 +21,7 @@ The CI migration job needs direct database access to run `supabase db push`.
 In the `zeroshots` repo settings → Secrets and variables → Actions:
 
 ```
-SUPABASE_DB_URL=postgresql://postgres:<POSTGRES_PASSWORD>@<contabo-server-ip>:54322/postgres
+SUPABASE_DB_URL=postgresql://postgres:<POSTGRES_PASSWORD>@<contabo-server-ip>:54322/salonease
 ```
 
 Port `54322` is how `supabase-db17` is exposed on the host (see `docker-compose.prod.yml`).
@@ -95,7 +95,7 @@ Or apply directly:
 
 ```bash
 # Using Supabase CLI (preferred — tracks which migrations have been applied)
-supabase db push --db-url "postgresql://postgres:<POSTGRES_PASSWORD>@<contabo-ip>:54322/postgres"
+supabase db push --db-url "postgresql://postgres:<POSTGRES_PASSWORD>@<contabo-ip>:54322/salonease"
 
 # Or via docker exec (manual fallback)
 cat supabase/migrations/20260224000000_screenshot_organizer_schema.sql | \

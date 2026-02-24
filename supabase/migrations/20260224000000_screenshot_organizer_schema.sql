@@ -1,8 +1,6 @@
 -- Migration: Dedicated schema for Screenshot Organizer
 -- Safe for production: uses its own schema, does NOT touch public.* or other apps' triggers.
 
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- ─────────────────────────────────────────────
 -- Schema
 -- ─────────────────────────────────────────────
@@ -36,7 +34,7 @@ GRANT ALL ON screenshot_organizer.users TO service_role;
 -- Subscriptions
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.subscriptions (
-    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID NOT NULL REFERENCES screenshot_organizer.users(id) ON DELETE CASCADE,
     provider    TEXT NOT NULL DEFAULT 'revenuecat',
     entitlement TEXT NOT NULL CHECK (entitlement IN ('free', 'premium', 'lifetime')) DEFAULT 'free',
@@ -59,7 +57,7 @@ GRANT ALL ON screenshot_organizer.subscriptions TO service_role;
 -- Assets
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.assets (
-    id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id           UUID NOT NULL REFERENCES screenshot_organizer.users(id) ON DELETE CASCADE,
     platform_asset_id TEXT NOT NULL,
     type              TEXT NOT NULL DEFAULT 'screenshot',
@@ -85,7 +83,7 @@ GRANT ALL ON screenshot_organizer.assets TO service_role;
 -- Cleanup sessions
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.cleanup_sessions (
-    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id        UUID NOT NULL REFERENCES screenshot_organizer.users(id) ON DELETE CASCADE,
     started_at     TIMESTAMPTZ DEFAULT NOW(),
     ended_at       TIMESTAMPTZ,
@@ -110,7 +108,7 @@ GRANT ALL ON screenshot_organizer.cleanup_sessions TO service_role;
 -- Cleanup actions
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.cleanup_actions (
-    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     session_id UUID NOT NULL REFERENCES screenshot_organizer.cleanup_sessions(id) ON DELETE CASCADE,
     asset_id   UUID NOT NULL REFERENCES screenshot_organizer.assets(id) ON DELETE CASCADE,
     action     TEXT NOT NULL CHECK (action IN ('keep', 'delete', 'archive', 'undo')),
@@ -136,7 +134,7 @@ GRANT ALL ON screenshot_organizer.cleanup_actions TO service_role;
 -- Usage counters (trust limit tracking)
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.usage_counters (
-    id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id      UUID NOT NULL REFERENCES screenshot_organizer.users(id) ON DELETE CASCADE,
     period_start TIMESTAMPTZ NOT NULL,
     period_end   TIMESTAMPTZ NOT NULL,
@@ -163,7 +161,7 @@ GRANT ALL ON screenshot_organizer.usage_counters TO service_role;
 -- Analytics events
 -- ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS screenshot_organizer.analytics_events (
-    id         UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id    UUID REFERENCES screenshot_organizer.users(id) ON DELETE SET NULL,
     event_name TEXT NOT NULL,
     properties JSONB DEFAULT '{}',
