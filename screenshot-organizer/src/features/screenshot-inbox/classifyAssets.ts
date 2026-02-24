@@ -1,5 +1,6 @@
 import { supabase, edgeFn } from '../../lib/supabase/client'
 import { useAuthStore } from '../../state/auth.store'
+import { Platform } from 'react-native'
 
 export interface ClassifiedAsset {
   id: string
@@ -15,16 +16,18 @@ export interface ClassifiedAsset {
 // Convert image URI to base64
 async function imageToBase64(uri: string): Promise<string | null> {
   try {
-    // Fetch the image
+    if (Platform.OS !== 'web') {
+      // Avoid aggressive image conversion on native devices; metadata-only classification is more stable.
+      return null
+    }
+
     const response = await fetch(uri)
     const blob = await response.blob()
-    
-    // Convert blob to base64
-    return new Promise((resolve, reject) => {
+
+    return await new Promise((resolve, reject) => {
       const reader = new FileReader()
       reader.onloadend = () => {
         const base64 = reader.result as string
-        // Remove data URL prefix (e.g., "data:image/jpeg;base64,")
         const base64Data = base64.split(',')[1]
         resolve(base64Data)
       }

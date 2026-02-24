@@ -39,12 +39,22 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const [currentIndex, setCurrentIndex] = useState(0)
+  const [isFinishing, setIsFinishing] = useState(false)
   const flatListRef = useRef<FlatList>(null)
   const { completeOnboarding } = useAuthStore()
 
   const finishOnboarding = async () => {
-    await completeOnboarding()
-    router.replace('/(tabs)/inbox')
+    if (isFinishing) return
+    setIsFinishing(true)
+    try {
+      await completeOnboarding()
+      router.replace('/(tabs)/inbox')
+    } catch (error) {
+      console.error('Failed to finish onboarding:', error)
+      Alert.alert('Something went wrong', 'Could not continue right now. Please try again.')
+    } finally {
+      setIsFinishing(false)
+    }
   }
 
   const handleNext = async () => {
@@ -69,7 +79,7 @@ export default function OnboardingScreen() {
   }
 
   const handleSkip = () => {
-    finishOnboarding()
+    void finishOnboarding()
   }
 
   const renderSlide = ({ item }: { item: typeof ONBOARDING_SLIDES[0] }) => (
@@ -123,11 +133,12 @@ export default function OnboardingScreen() {
       <Pressable
         style={styles.button}
         onPress={handleNext}
+        disabled={isFinishing}
         accessibilityRole="button"
         accessibilityLabel={currentIndex === ONBOARDING_SLIDES.length - 1 ? 'Get Started' : 'Next'}
       >
         <Text style={styles.buttonText}>
-          {currentIndex === ONBOARDING_SLIDES.length - 1 ? 'Get Started' : 'Next'}
+          {isFinishing ? 'Please wait...' : currentIndex === ONBOARDING_SLIDES.length - 1 ? 'Get Started' : 'Next'}
         </Text>
       </Pressable>
 

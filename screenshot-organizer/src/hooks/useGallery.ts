@@ -1,7 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
-import { QueuedAsset } from '../state/session.store'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
 
 const MOCK_ASSETS: ClassifiedAsset[] = [
@@ -12,6 +11,8 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
   { id: '5', uri: 'https://picsum.photos/seed/ss5/400/600', width: 1080, height: 1920, creationTime: Date.now() - 90 * 86400000, size: 5.1 * 1024 * 1024, filename: 'screenshot_5.png', tags: ['article'] },
   { id: '6', uri: 'https://picsum.photos/seed/ss6/400/600', width: 1170, height: 2532, creationTime: Date.now() - 3 * 86400000, size: 0.45 * 1024 * 1024, filename: 'screenshot_6.png', tags: ['code'] },
 ]
+const MAX_ASSETS_TO_LOAD = 300
+const MAX_ASSETS_TO_CLASSIFY = 40
 
 export function useGallery() {
   const isWeb = Platform.OS === 'web'
@@ -22,6 +23,7 @@ export function useGallery() {
     ? [{ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse, async () => ({ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse)]
     : MediaLibrary.usePermissions()
   const [error, setError] = useState<Error | null>(null)
+  const classificationRunIdRef = useRef(0)
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -37,11 +39,13 @@ export function useGallery() {
   const loadScreenshots = async () => {
     try {
       setIsLoading(true)
+      // Cancel any in-flight classification loop from previous loads.
+      classificationRunIdRef.current += 1
       
       const media = await MediaLibrary.getAssetsAsync({
         mediaType: 'photo',
         sortBy: ['creationTime'],
-        first: 1000,
+        first: MAX_ASSETS_TO_LOAD,
       })
 
       const screenshots = media.assets
@@ -61,7 +65,8 @@ export function useGallery() {
       
       // Classify images in background
       if (screenshots.length > 0) {
-        classifyScreenshots(screenshots)
+        const toClassify = screenshots.slice(0, MAX_ASSETS_TO_CLASSIFY)
+        classifyScreenshots(toClassify)
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load gallery'))
@@ -71,14 +76,30 @@ export function useGallery() {
   }
 
   const classifyScreenshots = useCallback(async (screenshots: ClassifiedAsset[]) => {
+    const runId = ++classificationRunIdRef.current
     try {
       setIsClassifying(true)
-      const classified = await classifyAssets(screenshots)
-      setAssets(classified)
+
+      // Queue with strict concurrency=1: classify each asset sequentially.
+      for (const screenshot of screenshots) {
+        // Stop if a newer classification run has started.
+        if (classificationRunIdRef.current !== runId) return
+
+        const [classified] = await classifyAssets([screenshot])
+        if (!classified) continue
+
+        setAssets((prev) =>
+          prev.map((asset) =>
+            asset.id === classified.id ? { ...asset, tags: classified.tags } : asset
+          )
+        )
+      }
     } catch (err) {
       console.error('Classification error:', err)
     } finally {
-      setIsClassifying(false)
+      if (classificationRunIdRef.current === runId) {
+        setIsClassifying(false)
+      }
     }
   }, [])
 
