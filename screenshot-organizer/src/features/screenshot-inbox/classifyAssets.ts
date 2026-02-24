@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase/client'
+import { supabase, edgeFn } from '../../lib/supabase/client'
 import { useAuthStore } from '../../state/auth.store'
 
 export interface ClassifiedAsset {
@@ -65,7 +65,7 @@ export async function classifyAssets(
       const imageBase64 = await imageToBase64(asset.uri)
       
       // Call classification edge function
-      const { data, error } = await supabase.functions.invoke('classify-image', {
+      const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
         body: {
           asset_id: asset.id,
           filename: asset.filename,
@@ -127,7 +127,7 @@ export async function classifyAssetsBatch(
       const imageBase64 = await imageToBase64(asset.uri)
       
       // Call classification edge function
-      const { data, error } = await supabase.functions.invoke('classify-image', {
+      const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
         body: {
           asset_id: asset.id,
           filename: asset.filename,

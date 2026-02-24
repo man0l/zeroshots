@@ -1,0 +1,70 @@
+name: Deploy Functions
+
+on:
+  push:
+    branches: [main, enet_analytics]
+    paths:
+      - 'supabase/functions/**'
+      - 'supabase/migrations/**'
+      - 'supabase/Dockerfile.functions'
+      - '.github/workflows/deploy-functions.yml'
+  # Weekly rebuild picks up base image updates from zero-gtm repo
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Build and push the edge functions Docker image.
+  # Extends ghcr.io/man0l/cold-email-ninja-app:functions-latest (zero-gtm base)
+  # and layers SO functions under "so-" prefix, then pushes BACK to the same tag.
+  # Watchtower on Contabo auto-pulls the updated image — no server changes needed.
+  # ─────────────────────────────────────────────────────────────────────────────
+  functions-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set short SHA
+        run: echo "SHA_SHORT=$(git rev-parse --short HEAD)" >> $GITHUB_ENV
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./supabase
+          file: ./supabase/Dockerfile.functions
+          push: true
+          tags: |
+            ghcr.io/man0l/cold-email-ninja-app:functions-latest
+            ghcr.io/man0l/cold-email-ninja-app:functions-so-${{ env.SHA_SHORT }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # Apply database migrations to the production supabase-db17 instance.
+  # Uses supabase db push which is idempotent — only unapplied migrations run.
+  # Requires SUPABASE_DB_URL secret:
+  #   postgresql://postgres:<password>@<contabo-ip>:54322/postgres
+  # ─────────────────────────────────────────────────────────────────────────────
+  migrations:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+
+      - name: Apply migrations
+        env:
+          PGSSLMODE: disable
+        run: supabase db push --db-url "${{ secrets.SUPABASE_DB_URL }}"

@@ -7,7 +7,7 @@ const corsHeaders = {
 }
 
 // Gemini API Configuration
-const GEMINI_API_KEY = 'AIzaSyBL64Bi89KavirAsogPwgWUPPMJgHffTdA'
+const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
 const GEMINI_MODEL = 'gemini-1.5-flash' // Using flash model for speed and cost
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
@@ -194,7 +194,8 @@ serve(async (req) => {
   try {
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+      { db: { schema: 'screenshot_organizer' } }
     )
 
     const { asset_id, filename, width, height, size_bytes, user_id, image_base64 } = await req.json()

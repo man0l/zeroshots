@@ -1,0 +1,15 @@
+# Extends the shared edge-runtime image (built by zero-gtm repo) and layers
+# Screenshot Organizer functions on top with an "so-" prefix to avoid name
+# collisions with the existing zero-gtm functions in the base image.
+#
+# The built image is pushed back to the same tag:
+#   ghcr.io/man0l/cold-email-ninja-app:functions-latest
+# so docker-compose.prod.yml needs no changes and Watchtower auto-pulls it.
+
+FROM ghcr.io/man0l/cold-email-ninja-app:functions-latest
+
+COPY functions/classify-image   /home/deno/functions/so-classify-image
+COPY functions/event-ingest     /home/deno/functions/so-event-ingest
+COPY functions/entitlement-sync /home/deno/functions/so-entitlement-sync
+COPY functions/usage-enforce    /home/deno/functions/so-usage-enforce
+COPY functions/oauth-callback   /home/deno/functions/so-oauth-callback

@@ -2,6 +2,16 @@ import { Platform } from 'react-native'
 import { createClient } from '@supabase/supabase-js'
 import AsyncStorage from '@react-native-async-storage/async-storage'
 
+/**
+ * Returns the edge function name with the environment-configured prefix applied.
+ * Local dev: no prefix (EXPO_PUBLIC_EDGE_FUNCTION_PREFIX is empty).
+ * Production: "so-" prefix to avoid collisions with other functions in the shared image.
+ */
+export function edgeFn(name: string): string {
+  const prefix = process.env.EXPO_PUBLIC_EDGE_FUNCTION_PREFIX ?? ''
+  return `${prefix}${name}`
+}
+
 // On Android emulator, "localhost" is the device itself. Use 10.0.2.2 to reach the host machine.
 export function getSupabaseUrl(): string {
   const url = process.env.EXPO_PUBLIC_SUPABASE_URL || ''
@@ -15,6 +25,9 @@ const supabaseUrl = getSupabaseUrl()
 const supabaseAnonKey = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || ''
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+  db: {
+    schema: 'screenshot_organizer',
+  },
   auth: {
     storage: AsyncStorage,
     autoRefreshToken: true,

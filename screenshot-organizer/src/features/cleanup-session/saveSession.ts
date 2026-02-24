@@ -1,4 +1,4 @@
-import { supabase } from '../../lib/supabase/client'
+import { supabase, edgeFn } from '../../lib/supabase/client'
 import { useSessionStore } from '../../state/session.store'
 
 export async function saveSessionToSupabase(userId: string) {
@@ -54,7 +54,7 @@ export async function saveSessionToSupabase(userId: string) {
 
   // 3. Update usage counters via edge function
   if (deletedCount > 0) {
-    const { error: usageError } = await supabase.functions.invoke('usage-enforce', {
+    const { error: usageError } = await supabase.functions.invoke(edgeFn('usage-enforce'), {
       body: { user_id: userId, count: deletedCount },
     })
 
@@ -65,7 +65,7 @@ export async function saveSessionToSupabase(userId: string) {
   }
 
   // 4. Send analytics events
-  const { error: analyticsError } = await supabase.functions.invoke('event-ingest', {
+  const { error: analyticsError } = await supabase.functions.invoke(edgeFn('event-ingest'), {
     body: {
       events: [
         {

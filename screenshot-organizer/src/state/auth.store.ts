@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import { Session, User } from '@supabase/supabase-js'
 import * as WebBrowser from 'expo-web-browser'
 import { makeRedirectUri } from 'expo-auth-session'
-import { supabase, getSupabaseUrl } from '../lib/supabase/client'
+import { supabase, getSupabaseUrl, edgeFn } from '../lib/supabase/client'
 
 // Required for web OAuth completion
 WebBrowser.maybeCompleteAuthSession?.()
@@ -125,7 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         : makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
     const redirectTo =
       Platform.OS === 'android'
-        ? `${getSupabaseUrl()}/functions/v1/oauth-callback`
+        ? `${getSupabaseUrl()}/functions/v1/${edgeFn('oauth-callback')}`
         : appRedirectBase
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
