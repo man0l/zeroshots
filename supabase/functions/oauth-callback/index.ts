@@ -1,62 +1,68 @@
 /**
- * OAuth callback proxy for mobile apps.
- * GoTrue redirects here with ?code=... (PKCE). We redirect to the app with the code in the path
- * so the app receives it even when the OS strips query params from custom scheme URLs (e.g. Android).
+ * OAuth callback relay for the Screenshot Organizer mobile app.
+ *
+ * GoTrue v2.2.12 uses EXACT string matching for redirect URL validation and
+ * rejects non-HTTP schemes. This relay receives the HTTPS redirect with tokens
+ * in the URL fragment, then client-side JavaScript reads the fragment and
+ * redirects to the app's deep link.
+ *
+ * The app's deep link URL is passed via the `redirect` query parameter which
+ * is preserved through the GoTrue redirect (fragments are appended AFTER the
+ * full URL including query string).
  */
-import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
+import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const APP_SCHEME = 'screenshot-organizer'
+const APP_REDIRECT = 'screenshot-organizer://auth/callback';
 
-const ALLOWED_REDIRECT_PATTERNS = [
-  /^screenshot-organizer:\/\//,
-  /^exp:\/\/[^/]*\/?--\//,
-  /^exp:\/\/localhost/,
-  /^exp:\/\/\d{1,3}(\.\d{1,3}){3}/,
-  /^http:\/\/localhost(:\d+)?/,
-  /^http:\/\/10\.0\.2\.2(:\d+)?/,
-]
+Deno.serve((_req: Request) => {
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Signing in...</title>
+  <style>
+    body {
+      background: #0f172a; color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex; align-items: center; justify-content: center;
+      height: 100vh; margin: 0;
+    }
+    .container { text-align: center; }
+    .spinner {
+      width: 40px; height: 40px; margin: 0 auto 16px;
+      border: 3px solid #1e293b; border-top-color: #38bdf8;
+      border-radius: 50%; animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="spinner"></div>
+    <p>Redirecting to app...</p>
+  </div>
+  <script>
+    (function() {
+      var hash = window.location.hash;
+      var redirect = '${APP_REDIRECT}';
 
-function isAllowedRedirect(uri: string): boolean {
-  return ALLOWED_REDIRECT_PATTERNS.some((pattern) => pattern.test(uri))
-}
+      if (hash) {
+        var tokenParams = hash.substring(1);
+        window.location.href = redirect + '?' + tokenParams;
+      } else {
+        document.querySelector('p').textContent = 'Authentication failed. Please try again.';
+      }
+    })();
+  </script>
+</body>
+</html>`;
 
-function base64UrlEncode(str: string): string {
-  const base64 = btoa(unescape(encodeURIComponent(str)))
-  return base64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-serve(async (req) => {
-  const url = new URL(req.url)
-  const code = url.searchParams.get('code')
-  const state = url.searchParams.get('state')
-  const appRedirect = url.searchParams.get('app_redirect')
-  const error = url.searchParams.get('error_description') ?? url.searchParams.get('error')
-  const appRedirectBase =
-    appRedirect && /^(https?|exp):\/\//i.test(appRedirect)
-      ? appRedirect.replace(/\/?$/, '')
-      : null
-
-  if (error) {
-    const base = appRedirectBase ?? (state && /^(https?|exp):\/\//i.test(state) ? state.replace(/\/?$/, '') : `${APP_SCHEME}://auth/callback`)
-    const redirect = `${base}?error=${encodeURIComponent(error)}`
-    return Response.redirect(redirect, 302)
-  }
-
-  if (!code) {
-    return new Response('Missing code parameter', { status: 400 })
-  }
-
-  if (state && !stateIsValid) {
-    return new Response('Invalid redirect URI in state parameter', { status: 400 })
-  }
-
-  const encoded = base64UrlEncode(code)
-  // If state is the app's redirect base (e.g. exp://... for Expo Go), redirect there so the app receives the code
-  const redirect =
-    appRedirectBase
-      ? `${appRedirectBase}/${encoded}`
-      : state && /^(https?|exp):\/\//i.test(state)
-      ? `${state.replace(/\/?$/, '')}/${encoded}`
-      : `${APP_SCHEME}://auth/callback/${encoded}`
-  return Response.redirect(redirect, 302)
-})
+  return new Response(html, {
+    status: 200,
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+      "Cache-Control": "no-store",
+    },
+  });
+});

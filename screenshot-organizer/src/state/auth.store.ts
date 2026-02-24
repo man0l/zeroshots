@@ -118,15 +118,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       return { error }
     }
 
-    // On Android: use proxy URL so GoTrue redirects there; state = where to send the code (Expo Go = exp://, dev build = custom scheme)
-    const appRedirectBase =
-      Platform.OS === 'android'
-        ? makeRedirectUri({ path: 'auth/callback' }) // Expo Go returns exp://...; dev build returns custom scheme
-        : makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
-    const redirectTo =
-      Platform.OS === 'android'
-        ? `${getSupabaseUrl()}/functions/v1/${edgeFn('oauth-callback')}`
-        : appRedirectBase
+    // GoTrue v2.2.12 rejects non-HTTPS redirect URLs, doesn't support PKCE,
+    // and does exact-match on redirect URLs (no query params allowed).
+    // Use an HTTPS relay: GoTrue redirects there with tokens in the fragment,
+    // then client-side JS reads the fragment and redirects to the app scheme.
+    const appRedirect = makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
+    const redirectTo = `${getSupabaseUrl()}/functions/v1/${edgeFn('oauth-callback')}`
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -136,8 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     })
     if (oauthError) return { error: oauthError }
     if (!data?.url) return { error: new Error('No OAuth URL returned') }
-    // Auth session should complete when browser returns to app URL, not proxy URL.
-    const result = await WebBrowser.openAuthSessionAsync(data.url, appRedirectBase)
+    const result = await WebBrowser.openAuthSessionAsync(data.url, appRedirect)
     if (result.type !== 'success' || !result.url) {
       return { error: result.type === 'cancel' ? null : new Error('Sign in was cancelled or failed') }
     }
