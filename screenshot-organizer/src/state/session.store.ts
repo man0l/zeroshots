@@ -42,6 +42,12 @@ interface SessionState {
   resetSession: () => void
 }
 
+function createSessionId(): string {
+  const randomUuid = globalThis.crypto?.randomUUID?.()
+  if (randomUuid) return randomUuid
+  return `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+}
+
 export const useSessionStore = create<SessionState>((set, get) => ({
   sessionId: null,
   startTime: null,
@@ -53,7 +59,7 @@ export const useSessionStore = create<SessionState>((set, get) => ({
 
   startSession: (assets) => {
     set({
-      sessionId: crypto.randomUUID(),
+      sessionId: createSessionId(),
       startTime: Date.now(),
       queue: assets,
       currentIndex: 0,
