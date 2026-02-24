@@ -47,6 +47,15 @@ jobs:
           VERSION=$(node -p "require('./app.json').expo.version")
           echo "app_version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: Write .env for production build
+        run: |
+          cat > .env <<EOF
+          EXPO_PUBLIC_SUPABASE_URL=${{ secrets.EXPO_PUBLIC_SUPABASE_URL }}
+          EXPO_PUBLIC_SUPABASE_ANON_KEY=${{ secrets.EXPO_PUBLIC_SUPABASE_ANON_KEY }}
+          EXPO_PUBLIC_REVENUECAT_API_KEY=${{ secrets.EXPO_PUBLIC_REVENUECAT_API_KEY }}
+          EXPO_PUBLIC_EDGE_FUNCTION_PREFIX=${{ secrets.EXPO_PUBLIC_EDGE_FUNCTION_PREFIX }}
+          EOF
+
       - name: Expo prebuild
         run: npx expo prebuild --platform android --no-install
 
