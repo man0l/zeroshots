@@ -53,7 +53,7 @@ export function useGallery() {
           height: asset.height,
           creationTime: asset.creationTime,
           size: 0,
-          filename: asset.filename,
+          filename: asset.filename ?? 'unknown.jpg',
           tags: ['screenshot'], // Default tag
         }))
 
@@ -140,13 +140,14 @@ export function useGallery() {
 }
 
 function isScreenshot(asset: MediaLibrary.Asset): boolean {
-  const filename = asset.filename.toLowerCase()
+  const filename = (asset.filename ?? '').toLowerCase()
+  const uri = (asset.uri ?? '').toLowerCase()
   
   if (filename.includes('screenshot') || filename.includes('img-')) {
     return true
   }
 
-  if (asset.uri.toLowerCase().includes('screenshots')) {
+  if (uri.includes('screenshots')) {
     return true
   }
 
