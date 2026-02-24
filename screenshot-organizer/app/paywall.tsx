@@ -4,7 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
-import { LinearGradient } from 'expo-linear-gradient'
+// expo-linear-gradient crashes under Fabric (newArchEnabled). Use a solid View.
+
 import { colors, fonts, spacing, radii } from '../src/lib/theme'
 import { useEntitlementStore } from '../src/state/entitlement.store'
 
@@ -73,12 +74,7 @@ export default function PaywallScreen() {
               accessibilityRole="button"
               accessibilityLabel="Unlock Unlimited"
             >
-              <LinearGradient
-                colors={['#06B6D4', '#8B5CF6']}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.upgradeGradient}
-              >
+              <View style={[styles.upgradeGradient, { backgroundColor: '#7C3AED' }]}>
                 <View style={styles.upgradeContent}>
                   <Ionicons name="flash" size={24} color={colors.textPrimary} />
                   <Text style={styles.upgradeText}>Unlock Unlimited</Text>
@@ -86,7 +82,7 @@ export default function PaywallScreen() {
                 <View style={styles.priceBadge}>
                   <Text style={styles.priceText}>$4.99</Text>
                 </View>
-              </LinearGradient>
+              </View>
             </Pressable>
 
             {/* Wait option */}

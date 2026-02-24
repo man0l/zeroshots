@@ -16,7 +16,8 @@ import { useGallery } from '../../src/hooks/useGallery'
 import { colors, fonts, spacing, radii, shadows } from '../../src/lib/theme'
 import { getTagColor } from '../../src/features/screenshot-inbox/classifyAssets'
 import { useRouter } from 'expo-router'
-import { LinearGradient } from 'expo-linear-gradient'
+// expo-linear-gradient crashes under Fabric (newArchEnabled). Use a plain fade View.
+
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 1
@@ -223,10 +224,7 @@ export default function LibraryScreen() {
 
       {/* Bottom fade + floating delete + nav */}
       <View style={styles.bottomContainer}>
-        <LinearGradient
-          colors={['transparent', `${colors.background}E6`, colors.background]}
-          style={styles.bottomGradient}
-        />
+        <View style={[styles.bottomGradient, { backgroundColor: `${colors.background}CC` }]} />
 
         <View style={styles.bottomInner}>
           {selectedIds.size > 0 && (

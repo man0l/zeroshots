@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native'
-import { useRouter } from 'expo-router'
+import { useRouter, useLocalSearchParams, useGlobalSearchParams } from 'expo-router'
 import * as Linking from 'expo-linking'
 import { useAuthStore } from '../../src/state/auth.store'
 import { colors } from '../../src/lib/theme'
@@ -8,14 +8,37 @@ import { colors } from '../../src/lib/theme'
 export default function AuthCallback() {
   const router = useRouter()
   const { createSessionFromUrl, session } = useAuthStore()
+  const params = useLocalSearchParams<{ access_token?: string; refresh_token?: string; code?: string }>()
 
   useEffect(() => {
-    Linking.getInitialURL().then(async (url) => {
-      if (!url) return
-      const { error } = await createSessionFromUrl(url)
-      if (error) console.warn('OAuth callback error:', error.message)
-    })
-  }, [createSessionFromUrl])
+    async function handleCallback() {
+      // 1. Try building the URL from Expo Router's search params (most reliable for in-app deep links)
+      if (params.access_token || params.code) {
+        const qs = new URLSearchParams(params as Record<string, string>).toString()
+        const syntheticUrl = `screenshot-organizer://auth/callback?${qs}`
+        const { error } = await createSessionFromUrl(syntheticUrl)
+        if (error) console.warn('OAuth callback error (params):', error.message)
+        return
+      }
+
+      // 2. Fallback: check the initial URL (cold launch from deep link)
+      const url = await Linking.getInitialURL()
+      if (url) {
+        const { error } = await createSessionFromUrl(url)
+        if (error) console.warn('OAuth callback error (initial):', error.message)
+        return
+      }
+
+      // 3. Fallback: listen for incoming URL (app was in background)
+      const sub = Linking.addEventListener('url', async ({ url: eventUrl }) => {
+        const { error } = await createSessionFromUrl(eventUrl)
+        if (error) console.warn('OAuth callback error (event):', error.message)
+      })
+      return () => sub.remove()
+    }
+
+    handleCallback()
+  }, [createSessionFromUrl, params.access_token, params.code])
 
   useEffect(() => {
     if (session) {

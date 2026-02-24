@@ -123,7 +123,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     // Use an HTTPS relay: GoTrue redirects there with tokens in the fragment,
     // then client-side JS reads the fragment and redirects to the app scheme.
     const appRedirect = makeRedirectUri({ scheme: 'screenshot-organizer', path: 'auth/callback' })
-    const redirectTo = `${getSupabaseUrl()}/functions/v1/${edgeFn('oauth-callback')}?redirect=${encodeURIComponent(appRedirect)}`
+    const redirectTo = `${getSupabaseUrl()}/functions/v1/${edgeFn('oauth-callback')}`
     const { data, error: oauthError } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
