@@ -18,14 +18,11 @@ defaults:
   run:
     working-directory: screenshot-organizer
 
-env:
-  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx4g -Dorg.gradle.parallel=true
-
 jobs:
   build:
     name: Debug APK
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
       - name: Checkout
@@ -44,18 +41,22 @@ jobs:
       - name: Expo prebuild
         run: npx expo prebuild --platform android --no-install
 
-      - name: Gradle cache
-        uses: actions/cache@v4
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
         with:
-          path: |
-            ~/.gradle/caches
-            ~/.gradle/wrapper
-          key: gradle-${{ hashFiles('screenshot-organizer/android/**/*.gradle*', 'screenshot-organizer/android/**/gradle-wrapper.properties') }}
-          restore-keys: gradle-
+          cache-encryption-key: ${{ secrets.GRADLE_ENCRYPTION_KEY }}
 
-      - name: Build debug APK
+      - name: Build debug APK (arm64 only)
         working-directory: screenshot-organizer/android
-        run: ./gradlew assembleDebug --no-daemon --build-cache -x lint -x test
+        run: >
+          ./gradlew assembleDebug
+          -PreactNativeArchitectures=arm64-v8a
+          -Dorg.gradle.jvmargs=-Xmx4g
+          -Dorg.gradle.parallel=true
+          --build-cache
+          --no-daemon
+          -x lint
+          -x test
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
