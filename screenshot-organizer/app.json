@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "We need access to your photo library to find and organize screenshots."
+        "NSPhotoLibraryUsageDescription": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, thumbnails are securely processed by Google Gemini."
       }
     },
     "android": {
@@ -29,9 +29,7 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.READ_MEDIA_VISUAL_USER_SELECTED",
-        "android.permission.READ_MEDIA_IMAGES",
-        "android.permission.READ_MEDIA_VIDEO",
-        "android.permission.READ_MEDIA_AUDIO"
+        "android.permission.READ_MEDIA_IMAGES"
       ],
       "package": "com.anonymous.screenshotorganizer"
     },
@@ -44,7 +42,7 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "We need access to your photo library to find and organize screenshots."
+          "photosPermission": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, thumbnails are securely processed by Google Gemini."
         }
       ]
     ]

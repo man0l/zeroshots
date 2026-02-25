@@ -123,7 +123,7 @@ function GalleryScreen({ insets, onAllowAccess, onSkip }: GalleryScreenProps) {
   const handleWhyNeeded = () => {
     Alert.alert(
       'Why do we need this?',
-      "We scan your photo library locally on your device to find screenshots, duplicates, and blurry photos. Your photos never leave your device — we only read what's already stored locally.",
+      "We scan your photo library on your device to find screenshots, duplicates, and blurry photos. By default, everything stays on your device. If you opt into AI sorting on the next step, thumbnails are securely processed by Google Gemini — you're always in control.",
       [{ text: 'Got it' }]
     )
   }
@@ -171,7 +171,7 @@ function GalleryScreen({ insets, onAllowAccess, onSkip }: GalleryScreenProps) {
         </Text>
         <View style={galleryScreenStyles.privacyNote}>
           <MaterialCommunityIcons name="shield-lock" size={14} color={colors.primary} />
-          <Text style={galleryScreenStyles.privacyNoteText}>Your photos never leave your device.</Text>
+          <Text style={galleryScreenStyles.privacyNoteText}>Your photos stay private. You choose what's shared.</Text>
         </View>
       </View>
 
