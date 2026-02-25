@@ -14,24 +14,43 @@ export const VALID_TAGS = [
   'code',
   'map',
   'ticket',
-  'screenshot',
+  'email',
+  'social',
+  'shopping',
+  'finance',
+  'notes',
+  'game',
+  'recipe',
+  'calendar',
+  'settings',
+  'ui',
+  'screenshot', // default fallback when nothing else matches
 ] as const
 
 export type ValidTag = (typeof VALID_TAGS)[number]
 
-// Keywords from Vision / ML Kit raw labels → our tag
+// Keywords from Vision / ML Kit raw labels → our tag. Order matters (first match wins).
 const LABEL_TO_TAG: Array<{ keywords: string[]; tag: ValidTag }> = [
   { keywords: ['receipt', 'invoice', 'bill', 'payment', 'purchase', 'confirmation'], tag: 'receipt' },
   { keywords: ['chat', 'message', 'conversation', 'text', 'messaging', 'sms', 'whatsapp'], tag: 'chat' },
-  { keywords: ['meme', 'funny', 'humor', 'comic', 'social media'], tag: 'meme' },
+  { keywords: ['email', 'mail', 'inbox', 'newsletter', 'gmail', 'outlook'], tag: 'email' },
+  { keywords: ['social', 'post', 'feed', 'tweet', 'profile', 'comments', 'instagram'], tag: 'social' },
+  { keywords: ['meme', 'funny', 'humor', 'comic', 'viral'], tag: 'meme' },
+  { keywords: ['shopping', 'product', 'store', 'wishlist', 'item', 'price'], tag: 'shopping' },
+  { keywords: ['finance', 'bank', 'balance', 'crypto', 'portfolio', 'stock'], tag: 'finance' },
+  { keywords: ['notes', 'note', 'list', 'reminder', 'todo', 'checklist', 'notion'], tag: 'notes' },
+  { keywords: ['recipe', 'food', 'cooking', 'ingredients', 'menu'], tag: 'recipe' },
+  { keywords: ['calendar', 'schedule', 'meeting', 'agenda', 'date'], tag: 'calendar' },
+  { keywords: ['game', 'gameplay', 'score', 'achievement', 'gaming'], tag: 'game' },
+  { keywords: ['settings', 'wifi', 'password', 'system', 'preferences'], tag: 'settings' },
   { keywords: ['error', 'warning', 'bug', 'crash', 'alert', 'failure'], tag: 'error' },
   { keywords: ['article', 'news', 'blog', 'reading', 'web page'], tag: 'article' },
-  { keywords: ['photo', 'selfie', 'camera', 'person', 'portrait', 'outdoor'], tag: 'photo' },
-  { keywords: ['document', 'form', 'pdf', 'paper', 'documentation'], tag: 'document' },
+  { keywords: ['photo', 'selfie', 'camera', 'person', 'portrait', 'outdoor', 'gallery', 'album'], tag: 'photo' },
+  { keywords: ['document', 'form', 'pdf', 'paper', 'documentation', 'contract', 'letter'], tag: 'document' },
   { keywords: ['code', 'programming', 'software', 'terminal', 'developer', 'script'], tag: 'code' },
   { keywords: ['map', 'location', 'direction', 'navigation', 'route', 'street'], tag: 'map' },
   { keywords: ['ticket', 'boarding', 'pass', 'event', 'travel', 'flight'], tag: 'ticket' },
-  { keywords: ['screenshot', 'screen', 'display', 'ui', 'interface', 'app'], tag: 'screenshot' },
+  { keywords: ['ui', 'interface', 'app', 'display', 'screen', 'app design'], tag: 'ui' },
 ]
 
 function filenameHints(filename: string): ValidTag[] {

@@ -11,19 +11,11 @@ const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY') ?? ''
 const GEMINI_MODEL = 'gemini-1.5-flash' // Using flash model for speed and cost
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`
 
-// Valid tags for classification
+// Valid tags for classification (must match app onDeviceTagMapping.VALID_TAGS)
 const VALID_TAGS = [
-  'receipt',      // Payment receipts, invoices, bills
-  'chat',         // Conversation screenshots, messages
-  'meme',         // Funny images, social media content
-  'error',        // Error messages, bugs, crashes
-  'article',      // Articles, news, blog posts
-  'photo',        // Personal photos
-  'document',     // Documents, forms
-  'code',         // Code screenshots
-  'map',          // Maps, directions
-  'ticket',       // Tickets, boarding passes
-  'screenshot',   // General screenshots (default)
+  'receipt', 'chat', 'meme', 'error', 'article', 'photo', 'document', 'code', 'map', 'ticket',
+  'email', 'social', 'shopping', 'finance', 'notes', 'game', 'recipe', 'calendar', 'settings',
+  'ui', 'screenshot',
 ]
 
 interface GeminiResponse {
@@ -44,18 +36,28 @@ Filename: ${filename}
 Available categories:
 - receipt: Payment receipts, invoices, bills, purchase confirmations
 - chat: Conversation screenshots, text messages, chat apps
-- meme: Funny images, social media content, viral content
+- email: Emails, inbox, newsletters
+- social: Social media posts, feeds, tweets, profiles
+- meme: Funny images, viral content
+- shopping: Products, wishlists, store pages
+- finance: Bank balances, portfolios, crypto, stocks
+- notes: Notes, to-do lists, reminders, checklists
+- recipe: Recipes, food, cooking, menus
+- calendar: Calendars, schedules, meetings
+- game: Gaming, gameplay, scores, achievements
+- settings: Settings, wifi, passwords, system info
 - error: Error messages, bug reports, crash screens
 - article: News articles, blog posts, reading content
-- photo: Personal photos, selfies, camera pictures
-- document: Documents, forms, PDF screenshots
-- code: Code screenshots, programming, terminal output
-- map: Maps, directions, location screenshots
+- photo: Personal photos, selfies, gallery
+- document: Documents, forms, PDFs, contracts
+- code: Code, programming, terminal output
+- map: Maps, directions, navigation
 - ticket: Tickets, boarding passes, event passes
-- screenshot: General app screenshots (default)
+- ui: App interfaces, screens, general UI (use when nothing else fits)
+- screenshot: Generic screenshot (default fallback)
 
 Respond with ONLY the category names separated by commas. Choose 1-3 most relevant categories.
-Example response: receipt,screenshot
+Example response: receipt,shopping
 
 Classification:`
 
@@ -130,62 +132,6 @@ Classification:`
   return [...new Set(tags)] // Remove duplicates
 }
 
-// Heuristic-based classification as fallback
-function classifyWithHeuristics(filename: string, aspectRatio: number, fileSize: number): string[] {
-  const tags: string[] = []
-  const lowerFilename = filename.toLowerCase()
-  
-  // Filename-based classification
-  if (lowerFilename.includes('receipt') || lowerFilename.includes('invoice') || lowerFilename.includes('bill')) {
-    tags.push('receipt')
-  }
-  
-  if (lowerFilename.includes('chat') || lowerFilename.includes('message') || lowerFilename.includes('conversation')) {
-    tags.push('chat')
-  }
-  
-  if (lowerFilename.includes('meme') || lowerFilename.includes('funny')) {
-    tags.push('meme')
-  }
-  
-  if (lowerFilename.includes('error') || lowerFilename.includes('crash') || lowerFilename.includes('bug')) {
-    tags.push('error')
-  }
-  
-  if (lowerFilename.includes('ticket') || lowerFilename.includes('boarding')) {
-    tags.push('ticket')
-  }
-  
-  if (lowerFilename.includes('map') || lowerFilename.includes('direction')) {
-    tags.push('map')
-  }
-  
-  if (lowerFilename.includes('code') || lowerFilename.includes('terminal')) {
-    tags.push('code')
-  }
-  
-  // Size-based heuristics
-  if (fileSize < 100 * 1024) {
-    tags.push('small')
-  } else if (fileSize > 5 * 1024 * 1024) {
-    tags.push('large')
-  }
-  
-  // Aspect ratio heuristics
-  if (aspectRatio > 2) {
-    tags.push('panoramic')
-  } else if (aspectRatio < 0.8) {
-    tags.push('portrait')
-  }
-  
-  // Default tag
-  if (tags.length === 0 || (!tags.some(t => VALID_TAGS.includes(t)))) {
-    tags.push('screenshot')
-  }
-  
-  return tags
-}
-
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -211,9 +157,9 @@ serve(async (req) => {
     }
 
     let tags: string[] = []
-    let classificationMethod = 'heuristic'
+    let classificationMethod = 'none'
 
-    // Try Gemini classification if we have image data
+    // Classify only when we have image data (Gemini). No image or Gemini failure = default tag only.
     if (image_base64) {
       try {
         console.log('Classifying with Gemini API...')
@@ -222,16 +168,12 @@ serve(async (req) => {
         console.log('Gemini classification result:', tags)
       } catch (geminiError) {
         console.error('Gemini classification failed:', geminiError)
-        // Fall back to heuristics
-        const aspectRatio = width && height ? width / height : 1
-        tags = classifyWithHeuristics(filename, aspectRatio, size_bytes || 0)
-        classificationMethod = 'heuristic (fallback)'
+        tags = ['screenshot']
+        classificationMethod = 'none'
       }
     } else {
-      // No image data, use heuristics only
-      console.log('No image data provided, using heuristics...')
-      const aspectRatio = width && height ? width / height : 1
-      tags = classifyWithHeuristics(filename, aspectRatio, size_bytes || 0)
+      tags = ['screenshot']
+      classificationMethod = 'none'
     }
 
     // Update asset with tags
