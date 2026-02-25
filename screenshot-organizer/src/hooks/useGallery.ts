@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
+import { getCachedTags, setCachedTags } from '../features/screenshot-inbox/classificationCache'
 import { useSettingsStore } from '../state/settings.store'
 import { useEntitlementStore } from '../state/entitlement.store'
 
@@ -51,7 +52,10 @@ export function useGallery() {
         first: MAX_ASSETS_TO_LOAD,
       })
 
-      const screenshots = media.assets
+      const ids = media.assets.filter(isScreenshot).map(a => a.id)
+      const cached = await getCachedTags(ids)
+
+      const screenshots: ClassifiedAsset[] = media.assets
         .filter(isScreenshot)
         .map(asset => ({
           id: asset.id,
@@ -61,21 +65,22 @@ export function useGallery() {
           creationTime: asset.creationTime,
           size: 0,
           filename: asset.filename ?? 'unknown.jpg',
-          tags: ['screenshot'], // Default tag
+          tags: cached[asset.id] ?? ['screenshot'],
         }))
 
       setAssets(screenshots)
-      
-      // Classify images in background — respect AI setting and freemium quota
+
+      // Only classify assets that have no cached tags — respect AI setting and freemium quota
       if (screenshots.length > 0) {
         const { aiEnabled } = useSettingsStore.getState()
         const { entitlement } = useEntitlementStore.getState()
-        // Free plan with AI: cap at freemium limit (15) to control API costs
-        // Heuristic classification has no cost cap
         const limit = aiEnabled && entitlement === 'free'
           ? FREEMIUM_AI_LIMIT
           : MAX_ASSETS_TO_CLASSIFY
-        classifyScreenshots(screenshots.slice(0, limit))
+        const toClassify = screenshots.filter(a => !cached[a.id]?.length).slice(0, limit)
+        if (toClassify.length > 0) {
+          classifyScreenshots(toClassify)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load gallery'))
@@ -89,9 +94,14 @@ export function useGallery() {
     try {
       setIsClassifying(true)
 
-      // Classify entire batch in one call (internal concurrency + single setState).
       const classified = await classifyAssets(screenshots)
       if (classificationRunIdRef.current !== runId) return
+
+      const updates: Record<string, string[]> = {}
+      for (const c of classified) {
+        if (c.tags?.length) updates[c.id] = c.tags
+      }
+      await setCachedTags(updates)
 
       setAssets((prev) =>
         prev.map((asset) => {
