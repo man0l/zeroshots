@@ -80,9 +80,9 @@ export default function PrivacyPolicyScreen() {
             conditions data leaves your device, and your rights as a user.
           </Body>
           <Body>
-            We designed this app with a privacy-first approach: by default, all processing happens
-            on your device. Cloud features (including AI classification) are strictly opt-in and
-            clearly labelled.
+            We designed this app with a privacy-first approach: all photo scanning and AI
+            classification run entirely on your device. No photo content is sent to the cloud for
+            classification.
           </Body>
         </Section>
 
@@ -93,53 +93,50 @@ export default function PrivacyPolicyScreen() {
             screenshots. This metadata never leaves your device.
           </Body>
           <Body>
-            <Highlight>Photo content (AI only, opt-in)</Highlight> — If and only if you enable
-            AI-Powered Sorting, a compressed representation of each photo is sent to Google's
-            Gemini API for content classification. This requires your explicit opt-in during
-            onboarding or in Settings → AI Features.
+            <Highlight>Photo content (on-device only)</Highlight> — If you enable AI sorting in
+            Settings, images are analysed on your device using the platform's built-in APIs (Apple
+            Vision on iOS, Google ML Kit on Android). No photo content is sent to our servers or
+            to Google's cloud for classification.
           </Body>
           <Body>
             <Highlight>Usage analytics (opt-out available)</Highlight> — We collect anonymised
-            events such as "session completed" or "AI classification used" to improve the app. No
-            photo content is included. You can disable this in Settings → Analytics.
+            events such as "session completed" to improve the app. No photo content is included.
+            You can disable this in Settings → Analytics.
           </Body>
         </Section>
 
-        <Section title="3. AI Classification & Google Gemini">
+        <Section title="3. AI Classification (On-Device Only)">
           <Body>
-            When AI Sorting is <Highlight>enabled</Highlight>:
+            When AI Sorting is <Highlight>enabled</Highlight> in Settings:
           </Body>
           <Bullet>
-            Thumbnails of your screenshots are sent over HTTPS to Google's Gemini 1.5 Flash API
-            for content type detection (e.g. receipt, chat, meme, error).
+            Images are analysed on your device using Apple Vision (iOS) or Google ML Kit (Android).
+            Processing happens locally; no photo content is sent to the cloud.
           </Bullet>
           <Bullet>
-            Google processes the image under their own privacy policy. We configure requests with
-            minimal sampling (temperature 0.1) and no training opt-in.
+            The result is a set of tags (e.g. receipt, chat, meme, document) that we store only on
+            your device to help you sort screenshots.
           </Bullet>
           <Bullet>
-            For free-tier users, AI classification is applied to up to 15 images per session,
-            matching the free plan's processing quota.
-          </Bullet>
-          <Bullet>
-            Classification results (tags only, never the image itself) are stored locally.
+            You can turn AI sorting off at any time in Settings → AI Features. When off, we use a
+            default tag only; no image analysis is performed.
           </Bullet>
 
           <Body style={{ marginTop: spacing.md }}>
             When AI Sorting is <Highlight>disabled</Highlight>:
           </Body>
           <Bullet>
-            All classification uses on-device filename heuristics and image metadata only.
+            No image analysis runs. Screenshots are tagged with a default label only.
           </Bullet>
           <Bullet>
-            No image data is ever transmitted. Everything stays on your device.
+            All data stays on your device. Nothing is transmitted for classification.
           </Bullet>
 
           <View style={styles.noteBox}>
             <MaterialCommunityIcons name="shield-check" size={16} color={colors.primary} />
             <Text style={styles.noteText}>
-              You can withdraw AI consent at any time via Settings → AI Features. Disabling it
-              stops all future image transmissions immediately.
+              AI classification is entirely on-device. No photo content is ever sent to our
+              servers or to third-party cloud APIs for sorting.
             </Text>
           </View>
         </Section>
@@ -183,7 +180,7 @@ export default function PrivacyPolicyScreen() {
             <Highlight>Portability</Highlight>: Receive your data in a machine-readable format.
           </Bullet>
           <Bullet>
-            <Highlight>Opt-out</Highlight>: Withdraw AI consent or disable analytics at any time
+            <Highlight>Opt-out</Highlight>: Turn off AI sorting or disable analytics at any time
             in Settings without affecting core app functionality.
           </Bullet>
           <Bullet>
@@ -199,15 +196,10 @@ export default function PrivacyPolicyScreen() {
 
         <Section title="7. Third-Party Services">
           <Body>
-            We use the following third-party services. Each has its own privacy policy:
+            We use the following third-party services. Each has its own privacy policy. AI
+            classification uses on-device APIs (Apple Vision, Google ML Kit); no image data is
+            sent to these providers' cloud services.
           </Body>
-          <View style={styles.serviceRow}>
-            <MaterialCommunityIcons name="google" size={18} color={colors.textMuted} />
-            <View style={styles.serviceInfo}>
-              <Text style={styles.serviceName}>Google Gemini (AI, opt-in only)</Text>
-              <InlineLink label="policies.google.com" url="https://policies.google.com" />
-            </View>
-          </View>
           <View style={styles.serviceRow}>
             <MaterialCommunityIcons name="credit-card-outline" size={18} color={colors.textMuted} />
             <View style={styles.serviceInfo}>

@@ -122,7 +122,7 @@ function GalleryScreen({ insets, onAllowAccess, onSkip }: GalleryScreenProps) {
   const handleWhyNeeded = () => {
     Alert.alert(
       'Why do we need this?',
-      "We scan your photo library on your device to find screenshots, duplicates, and blurry photos. By default, everything stays on your device. If you opt into AI sorting on the next step, thumbnails are securely processed by Google Gemini — you're always in control.",
+      "We scan your photo library on your device to find screenshots and help you organize them. All scanning and any optional AI sorting (you can turn it on in Settings) happens entirely on your device — nothing is sent to the cloud.",
       [{ text: 'Got it' }]
     )
   }
