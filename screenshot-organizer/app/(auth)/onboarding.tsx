@@ -196,7 +196,7 @@ function WelcomeSlide() {
       <WelcomeVisual />
       <View style={slideStyles.contentSection}>
         <Text style={slideStyles.welcomeTitle}>
-          Free up space,{' '}
+          Free up space,{'\n'}
           <Text style={slideStyles.welcomeTitleHighlight}>effortlessly.</Text>
         </Text>
         <Text style={slideStyles.welcomeSubtitle}>
@@ -313,12 +313,6 @@ export default function OnboardingScreen() {
         shadowColor: colors.keep,
       }
     }
-    if (currentIndex === 2) {
-      return {
-        ...styles.button,
-        borderRadius: radii.xl,
-      }
-    }
     return styles.button
   }
 
@@ -339,8 +333,10 @@ export default function OnboardingScreen() {
   const showBackButton = currentIndex > 0
   const headerTitle = currentIndex === 1 ? 'How to use' : currentIndex === 2 ? 'Safety Net' : ''
 
+  const slideBackground = currentIndex === 1 ? '#0B1A0E' : colors.background
+
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: slideBackground }]}>
       {/* Header */}
       {showHeader && (
         <View style={styles.header}>
@@ -382,7 +378,7 @@ export default function OnboardingScreen() {
         <View style={styles.pagination}>
           {SLIDES.map((_, index) => {
             const isActive = index === currentIndex
-            const activeColor = currentIndex === 1 ? colors.keep : colors.textPrimary
+            const activeColor = currentIndex === 1 ? colors.keep : colors.primary
             return (
               <View
                 key={index}
@@ -391,12 +387,12 @@ export default function OnboardingScreen() {
                   isActive && [
                     styles.paginationDotActive,
                     { backgroundColor: activeColor },
-                    currentIndex !== 1 && {
-                      shadowColor: '#FFFFFF',
+                    {
+                      shadowColor: activeColor,
                       shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.5,
+                      shadowOpacity: 0.6,
                       shadowRadius: 10,
-                    }
+                    },
                   ],
                 ]}
               />
@@ -564,11 +560,12 @@ const slideStyles = StyleSheet.create({
     flexShrink: 0,
   },
   mechanicTitle: {
-    fontSize: 32,
+    fontSize: 36,
     fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.md,
+    lineHeight: 42,
   },
   mechanicSubtitle: {
     fontSize: 16,
@@ -711,8 +708,8 @@ const visualStyles = StyleSheet.create({
   },
   swipeCardStack: {
     position: 'absolute',
-    width: '80%',
-    maxWidth: 320,
+    width: '88%',
+    maxWidth: 360,
     aspectRatio: 3 / 4,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -730,8 +727,8 @@ const visualStyles = StyleSheet.create({
     zIndex: 0,
   },
   swipeMainCard: {
-    width: '80%',
-    maxWidth: 320,
+    width: '88%',
+    maxWidth: 360,
     aspectRatio: 3 / 4,
     borderRadius: radii.lg,
     borderWidth: 1,
@@ -834,21 +831,21 @@ const visualStyles = StyleSheet.create({
   shieldContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    height: 300,
+    height: 360,
     marginBottom: spacing.lg,
   },
   shieldGlow: {
     position: 'absolute',
-    width: 256,
-    height: 256,
-    borderRadius: 128,
-    backgroundColor: `${colors.primary}33`,
-    transform: [{ scale: 0.75 }],
+    width: 320,
+    height: 320,
+    borderRadius: 160,
+    backgroundColor: `${colors.primary}26`,
+    transform: [{ scale: 0.85 }],
   },
   shieldBox: {
-    width: 200,
-    height: 200,
-    borderRadius: 48,
+    width: 240,
+    height: 240,
+    borderRadius: 56,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
@@ -856,8 +853,8 @@ const visualStyles = StyleSheet.create({
     justifyContent: 'center',
     shadowColor: colors.primary,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.1,
-    shadowRadius: 20,
+    shadowOpacity: 0.15,
+    shadowRadius: 24,
     elevation: 10,
   },
   shieldIcon: {
@@ -867,7 +864,8 @@ const visualStyles = StyleSheet.create({
   },
   daysBadge: {
     position: 'absolute',
-    bottom: 40,
+    bottom: 36,
+    alignSelf: 'center',
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
@@ -893,16 +891,16 @@ const visualStyles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.05)',
   },
   floatingCheckmark: {
-    top: 20,
-    right: 40,
+    top: 28,
+    right: 28,
     width: 48,
     height: 48,
     borderRadius: radii.lg,
     transform: [{ rotate: '12deg' }],
   },
   floatingRestore: {
-    bottom: 20,
-    left: 40,
+    bottom: 28,
+    left: 28,
     width: 64,
     height: 64,
     borderRadius: radii.xl,
