@@ -1,13 +1,17 @@
 import React from 'react'
-import { View, Text, StyleSheet, Pressable } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Switch } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { colors, spacing, radii } from '../../src/lib/theme'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
+import { useSettingsStore } from '../../src/state/settings.store'
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
+  const router = useRouter()
   const { entitlement, deletesRemaining, setEntitlement } = useEntitlementStore()
+  const { aiEnabled, setAiEnabled } = useSettingsStore()
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
@@ -56,6 +60,39 @@ export default function SettingsScreen() {
             </View>
           </View>
         )}
+      </View>
+
+      {/* AI Features */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>AI Features</Text>
+        <View style={styles.card}>
+          <View style={styles.row}>
+            <View style={styles.aiLabelGroup}>
+              <Text style={styles.label}>AI Smart Scan</Text>
+              <Text style={styles.aiSubLabel}>
+                {aiEnabled
+                  ? `Photos classified by Google Gemini${entitlement === 'free' ? ' (first 15 per session)' : ''}`
+                  : 'On-device only — no photos leave your device'}
+              </Text>
+            </View>
+            <Switch
+              value={aiEnabled}
+              onValueChange={setAiEnabled}
+              trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={colors.surfaceHighlight}
+            />
+          </View>
+          <Pressable
+            onPress={() => router.push('/privacy-policy')}
+            style={styles.privacyRow}
+            accessibilityRole="link"
+          >
+            <Ionicons name="shield-checkmark-outline" size={16} color={colors.textMuted} />
+            <Text style={styles.privacyLinkText}>Privacy Policy</Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.section}>
@@ -154,5 +191,28 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.keep,
     marginLeft: spacing.sm,
+  },
+  aiLabelGroup: {
+    flex: 1,
+    gap: spacing.xs,
+    marginRight: spacing.sm,
+  },
+  aiSubLabel: {
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 17,
+  },
+  privacyRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.slateBorder,
+  },
+  privacyLinkText: {
+    flex: 1,
+    fontSize: 14,
+    color: colors.textMuted,
   },
 })

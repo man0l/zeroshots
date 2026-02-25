@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Platform } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
+import { useSettingsStore } from '../state/settings.store'
+import { useEntitlementStore } from '../state/entitlement.store'
 
 const MOCK_ASSETS: ClassifiedAsset[] = [
   { id: '1', uri: 'https://picsum.photos/seed/ss1/400/600', width: 1125, height: 2436, creationTime: Date.now() - 420 * 86400000, size: 2.8 * 1024 * 1024, filename: 'screenshot_1.png', tags: ['receipt'] },
@@ -13,6 +15,7 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
 ]
 const MAX_ASSETS_TO_LOAD = 300
 const MAX_ASSETS_TO_CLASSIFY = 40
+const FREEMIUM_AI_LIMIT = 15 // Matches freemium delete quota
 
 export function useGallery() {
   const isWeb = Platform.OS === 'web'
@@ -63,10 +66,16 @@ export function useGallery() {
 
       setAssets(screenshots)
       
-      // Classify images in background
+      // Classify images in background — respect AI setting and freemium quota
       if (screenshots.length > 0) {
-        const toClassify = screenshots.slice(0, MAX_ASSETS_TO_CLASSIFY)
-        classifyScreenshots(toClassify)
+        const { aiEnabled } = useSettingsStore.getState()
+        const { entitlement } = useEntitlementStore.getState()
+        // Free plan with AI: cap at freemium limit (15) to control API costs
+        // Heuristic classification has no cost cap
+        const limit = aiEnabled && entitlement === 'free'
+          ? FREEMIUM_AI_LIMIT
+          : MAX_ASSETS_TO_CLASSIFY
+        classifyScreenshots(screenshots.slice(0, limit))
       }
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to load gallery'))

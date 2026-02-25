@@ -1,5 +1,6 @@
 import { supabase, edgeFn } from '../../lib/supabase/client'
 import { useAuthStore } from '../../state/auth.store'
+import { useSettingsStore } from '../../state/settings.store'
 import { Platform } from 'react-native'
 
 export interface ClassifiedAsset {
@@ -11,6 +12,36 @@ export interface ClassifiedAsset {
   size: number
   filename: string
   tags?: string[]
+}
+
+// On-device heuristic classifier — used when AI is disabled or as fallback
+function classifyByHeuristics(
+  filename: string,
+  width: number,
+  height: number,
+  size: number
+): string[] {
+  const tags: string[] = []
+  const lower = filename.toLowerCase()
+
+  if (lower.includes('receipt') || lower.includes('invoice') || lower.includes('bill')) tags.push('receipt')
+  if (lower.includes('chat') || lower.includes('message') || lower.includes('conversation')) tags.push('chat')
+  if (lower.includes('meme') || lower.includes('funny')) tags.push('meme')
+  if (lower.includes('error') || lower.includes('crash') || lower.includes('bug')) tags.push('error')
+  if (lower.includes('ticket') || lower.includes('boarding')) tags.push('ticket')
+  if (lower.includes('map') || lower.includes('direction')) tags.push('map')
+  if (lower.includes('code') || lower.includes('terminal')) tags.push('code')
+  if (lower.includes('article') || lower.includes('news')) tags.push('article')
+
+  // Aspect ratio hints
+  if (width > 0 && height > 0) {
+    const ratio = width / height
+    if (ratio > 2) tags.push('panoramic')
+    if (ratio < 0.6) tags.push('portrait')
+  }
+
+  if (tags.length === 0) tags.push('screenshot')
+  return tags
 }
 
 // Convert image URI to base64
@@ -51,11 +82,21 @@ export async function classifyAssets(
     filename: string
   }>
 ): Promise<ClassifiedAsset[]> {
+  const { aiEnabled } = useSettingsStore.getState()
+
+  // AI disabled → classify on-device instantly, no network call
+  if (!aiEnabled) {
+    return assets.map(a => ({
+      ...a,
+      tags: classifyByHeuristics(a.filename, a.width, a.height, a.size),
+    }))
+  }
+
   const { user } = useAuthStore.getState()
-  
+
   if (!user) {
     console.warn('No user logged in, skipping classification')
-    return assets.map(a => ({ ...a, tags: ['screenshot'] }))
+    return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
   }
 
   const classifiedAssets: ClassifiedAsset[] = []
@@ -112,11 +153,22 @@ export async function classifyAssetsBatch(
   }>,
   onProgress?: (completed: number, total: number) => void
 ): Promise<ClassifiedAsset[]> {
+  const { aiEnabled } = useSettingsStore.getState()
+
+  // AI disabled → instant on-device classification
+  if (!aiEnabled) {
+    const results = assets.map((a, i) => {
+      onProgress?.(i + 1, assets.length)
+      return { ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }
+    })
+    return results
+  }
+
   const { user } = useAuthStore.getState()
-  
+
   if (!user) {
     console.warn('No user logged in, skipping classification')
-    return assets.map(a => ({ ...a, tags: ['screenshot'] }))
+    return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
   }
 
   const results: ClassifiedAsset[] = []

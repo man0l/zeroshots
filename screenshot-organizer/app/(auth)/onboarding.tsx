@@ -11,6 +11,7 @@ import {
   ImageBackground,
   Animated,
   Easing,
+  Switch,
 } from 'react-native'
 import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -19,6 +20,7 @@ import * as MediaLibrary from 'expo-media-library'
 import { MaterialCommunityIcons } from '@expo/vector-icons'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useAuthStore } from '../../src/state/auth.store'
+import { useSettingsStore } from '../../src/state/settings.store'
 import { colors, spacing, radii, shadows } from '../../src/lib/theme'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
@@ -198,6 +200,111 @@ function GalleryScreen({ insets, onAllowAccess, onSkip }: GalleryScreenProps) {
           accessibilityRole="button"
         >
           <Text style={galleryScreenStyles.whyButtonText}>Why do we need this?</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
+interface AISetupScreenProps {
+  insets: { top: number; bottom: number }
+  onContinue: (aiEnabled: boolean) => Promise<void>
+}
+
+function AISetupScreen({ insets, onContinue }: AISetupScreenProps) {
+  const router = useRouter()
+  // Toggle starts ON — user opts out if they want, matching design
+  const [aiOn, setAiOn] = useState(true)
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleContinue = async () => {
+    setIsLoading(true)
+    await onContinue(aiOn)
+    setIsLoading(false)
+  }
+
+  const handleSkipAI = async () => {
+    setIsLoading(true)
+    await onContinue(false)
+    setIsLoading(false)
+  }
+
+  return (
+    <View style={[aiStyles.container, { paddingTop: insets.top }]}>
+      {/* Header */}
+      <View style={aiStyles.header}>
+        <MaterialCommunityIcons name="arrow-left" size={24} color={colors.textPrimary} />
+        <Text style={aiStyles.headerTitle}>AI Setup</Text>
+        <View style={aiStyles.headerSpacer} />
+      </View>
+
+      {/* Hero */}
+      <View style={aiStyles.hero}>
+        <View style={aiStyles.heroIconWrap}>
+          <View style={aiStyles.heroGlow} />
+          <MaterialCommunityIcons name="auto-fix" size={48} color={colors.primary} style={aiStyles.heroIcon} />
+        </View>
+        <Text style={aiStyles.heroTitle}>Enable AI-Powered{'\n'}Sorting?</Text>
+        <Text style={aiStyles.heroSubtitle}>
+          Supercharge your cleanup. Enable our AI to automatically detect blurry photos, duplicates, and screenshots.
+        </Text>
+      </View>
+
+      {/* Toggle card */}
+      <View style={aiStyles.card}>
+        <View style={aiStyles.cardRow}>
+          <View style={aiStyles.cardLeft}>
+            <View style={aiStyles.cardLabelRow}>
+              <MaterialCommunityIcons name="head-cog-outline" size={20} color={colors.primary} />
+              <Text style={aiStyles.cardTitle}>AI Smart Scan</Text>
+            </View>
+            <Text style={aiStyles.cardDesc}>
+              Our AI analyzes photos to find blurry shots and duplicates. To do this, photos are processed securely by Google Gemini.
+            </Text>
+          </View>
+          <Switch
+            value={aiOn}
+            onValueChange={setAiOn}
+            trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
+            thumbColor="#FFFFFF"
+            ios_backgroundColor={colors.surfaceHighlight}
+          />
+        </View>
+
+        <Pressable
+          onPress={() => router.push('/privacy-policy')}
+          accessibilityRole="link"
+          style={aiStyles.privacyLink}
+        >
+          <Text style={aiStyles.privacyLinkText}>Learn More / Privacy Policy</Text>
+        </Pressable>
+      </View>
+
+      {/* Footer actions */}
+      <View style={[aiStyles.footer, { paddingBottom: insets.bottom + spacing.lg }]}>
+        <Pressable
+          style={[aiStyles.primaryButton, isLoading && aiStyles.buttonDisabled]}
+          onPress={handleContinue}
+          disabled={isLoading}
+          accessibilityRole="button"
+        >
+          <View style={aiStyles.buttonContent}>
+            <Text style={aiStyles.primaryButtonText}>
+              {isLoading ? 'Please wait...' : 'Enable & Continue'}
+            </Text>
+            {!isLoading && (
+              <MaterialCommunityIcons name="arrow-right" size={20} color={colors.background} />
+            )}
+          </View>
+        </Pressable>
+
+        <Pressable
+          style={aiStyles.secondaryButton}
+          onPress={handleSkipAI}
+          disabled={isLoading}
+          accessibilityRole="button"
+        >
+          <Text style={aiStyles.secondaryButtonText}>Skip AI, use manual sorting</Text>
         </Pressable>
       </View>
     </View>
@@ -441,10 +548,15 @@ export default function OnboardingScreen() {
     }
   }
 
-  const requestPermissionAndFinish = async () => {
+  const requestPermissionAndAdvanceToAI = async () => {
+    // Web has no real gallery permission — advance directly
+    if (Platform.OS === 'web') {
+      setCurrentIndex(4)
+      return
+    }
     const { status } = await MediaLibrary.requestPermissionsAsync()
     if (status === 'granted') {
-      await finishOnboarding()
+      setCurrentIndex(4)
     } else {
       Alert.alert(
         'Permission Required',
@@ -454,11 +566,18 @@ export default function OnboardingScreen() {
     }
   }
 
+  const handleAIContinue = async (aiEnabled: boolean) => {
+    useSettingsStore.getState().setAiEnabled(aiEnabled)
+    await finishOnboarding()
+  }
+
   const handleNext = async () => {
     if (currentIndex < SLIDES.length - 1) {
       setCurrentIndex(currentIndex + 1)
     } else {
-      await requestPermissionAndFinish()
+      // Slides 3+ are rendered as their own full-screen components;
+      // this fallback should not be reached in normal flow.
+      await requestPermissionAndAdvanceToAI()
     }
   }
 
@@ -520,8 +639,17 @@ export default function OnboardingScreen() {
     return (
       <GalleryScreen
         insets={insets}
-        onAllowAccess={requestPermissionAndFinish}
+        onAllowAccess={requestPermissionAndAdvanceToAI}
         onSkip={finishOnboarding}
+      />
+    )
+  }
+
+  if (currentIndex === 4) {
+    return (
+      <AISetupScreen
+        insets={insets}
+        onContinue={handleAIContinue}
       />
     )
   }
@@ -1357,6 +1485,157 @@ const galleryScreenStyles = StyleSheet.create({
   },
   whyButtonText: {
     fontSize: 14,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+})
+
+const aiStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    height: 56,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  headerSpacer: {
+    width: 24,
+  },
+  hero: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.xl,
+    gap: spacing.lg,
+  },
+  heroIconWrap: {
+    width: 96,
+    height: 96,
+    borderRadius: radii.full,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.slateBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  heroGlow: {
+    position: 'absolute',
+    inset: 0,
+    width: 96,
+    height: 96,
+    borderRadius: radii.full,
+    backgroundColor: `${colors.primary}26`,
+  },
+  heroIcon: {
+    textShadowColor: `${colors.primary}80`,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 12,
+  },
+  heroTitle: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 38,
+  },
+  heroSubtitle: {
+    fontSize: 16,
+    color: '#CBD5E1',
+    textAlign: 'center',
+    lineHeight: 24,
+    maxWidth: 320,
+  },
+  card: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.slateBorder,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  cardRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.md,
+  },
+  cardLeft: {
+    flex: 1,
+    gap: spacing.sm,
+  },
+  cardLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  cardTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  cardDesc: {
+    fontSize: 13,
+    color: colors.textMuted,
+    lineHeight: 20,
+  },
+  privacyLink: {
+    alignSelf: 'center',
+    paddingVertical: spacing.xs,
+  },
+  privacyLinkText: {
+    fontSize: 13,
+    color: colors.textMuted,
+    textDecorationLine: 'underline',
+  },
+  footer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    gap: spacing.sm,
+  },
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
+  buttonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  primaryButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.background,
+  },
+  secondaryButton: {
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.full,
+  },
+  secondaryButtonText: {
+    fontSize: 15,
     fontWeight: '500',
     color: colors.textMuted,
   },

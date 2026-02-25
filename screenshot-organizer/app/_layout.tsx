@@ -33,10 +33,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (!isReady) return
+    const PUBLIC_ROUTES = ['review-session', 'paywall', 'privacy-policy']
+
     if (DEV_BYPASS_AUTH) {
       const inTabs = segments[0] === '(tabs)'
       const inAuth = segments[0] === '(auth)'
-      if (!inTabs && !inAuth && segments[0] !== 'review-session' && segments[0] !== 'paywall') {
+      if (!inTabs && !inAuth && !PUBLIC_ROUTES.includes(segments[0])) {
         router.replace('/(tabs)/inbox')
       }
       return
@@ -44,7 +46,7 @@ export default function RootLayout() {
 
     const inAuthGroup = segments[0] === '(auth)'
 
-    if (!session && !inAuthGroup) {
+    if (!session && !inAuthGroup && !PUBLIC_ROUTES.includes(segments[0])) {
       router.replace('/(auth)/sign-in')
     } else if (session && inAuthGroup) {
       if (!isOnboarded) {
@@ -89,6 +91,13 @@ export default function RootLayout() {
             presentation: 'transparentModal',
             animation: 'fade',
           }} 
+        />
+        <Stack.Screen
+          name="privacy-policy"
+          options={{
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
         />
       </Stack>
     </GestureHandlerRootView>
