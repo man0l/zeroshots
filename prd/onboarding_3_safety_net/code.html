@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Swipe-to-Clean Onboarding - Safety Net</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#3ac2f8",
+              "background-light": "#f5f7f8",
+              "background-dark": "#101d23",
+              "surface-dark": "#18282f",
+            },
+            fontFamily: {
+              "display": ["Space Grotesk", "sans-serif"]
+            },
+            borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark font-display antialiased h-screen flex flex-col overflow-hidden selection:bg-primary/30">
+<!-- Top Navigation -->
+<div class="flex items-center p-4 pt-12 pb-2 justify-between z-10">
+<button class="text-slate-900 dark:text-slate-100 flex size-12 shrink-0 items-center justify-center rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[24px]">arrow_back</span>
+</button>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center">Safety Net</h2>
+<button class="flex w-12 items-center justify-end">
+<p class="text-slate-500 dark:text-slate-400 text-base font-bold leading-normal tracking-[0.015em] shrink-0 hover:text-primary transition-colors">Skip</p>
+</button>
+</div>
+<!-- Main Content Area -->
+<div class="flex-1 flex flex-col items-center justify-center px-6 relative w-full max-w-md mx-auto">
+<!-- Visual: Secure Shield with Clock -->
+<div class="relative w-full aspect-square max-h-[360px] flex items-center justify-center mb-8">
+<!-- Background Glow -->
+<div class="absolute inset-0 bg-primary/20 blur-3xl rounded-full scale-75 animate-pulse"></div>
+<!-- Shield Container -->
+<div class="relative z-10 w-64 h-64 bg-surface-dark rounded-[3rem] border border-white/10 flex items-center justify-center shadow-2xl shadow-primary/10">
+<div class="relative flex flex-col items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[96px] mb-2 drop-shadow-[0_0_15px_rgba(58,194,248,0.5)]">shield_lock</span>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 mt-8 bg-background-dark/90 backdrop-blur rounded-full px-3 py-1 border border-primary/30 flex items-center gap-1 shadow-lg">
+<span class="material-symbols-outlined text-[16px] text-primary">history</span>
+<span class="text-xs font-bold text-white tracking-widest uppercase">30 Days</span>
+</div>
+</div>
+</div>
+<!-- Floating Elements decoration -->
+<div class="absolute top-10 right-10 w-12 h-12 bg-surface-dark rounded-xl border border-white/5 flex items-center justify-center shadow-lg rotate-12">
+<span class="material-symbols-outlined text-green-400 text-[24px]">check_circle</span>
+</div>
+<div class="absolute bottom-10 left-10 w-16 h-16 bg-surface-dark rounded-2xl border border-white/5 flex items-center justify-center shadow-lg -rotate-6">
+<span class="material-symbols-outlined text-slate-400 text-[32px]">restore_from_trash</span>
+</div>
+</div>
+<!-- Text Content -->
+<div class="text-center w-full mb-4">
+<h1 class="text-slate-900 dark:text-white tracking-tight text-[32px] font-bold leading-tight pb-3">
+                No accidents.<br/>Total control.
+            </h1>
+<p class="text-slate-600 dark:text-slate-400 text-base font-normal leading-relaxed">
+                We never permanently delete your photos. Anything you trash simply moves to your phone's native <span class="text-primary font-medium">"Recently Deleted"</span> folder, where it stays safe for 30 days. You can always change your mind.
+            </p>
+</div>
+<!-- Pagination Dots -->
+<div class="flex flex-row items-center justify-center gap-3 py-6">
+<div class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+<div class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+<div class="h-2 w-8 rounded-full bg-primary shadow-[0_0_10px_rgba(58,194,248,0.5)]"></div>
+<div class="h-2 w-2 rounded-full bg-slate-300 dark:bg-slate-700"></div>
+</div>
+</div>
+<!-- Bottom Action Area -->
+<div class="w-full p-4 pb-8 max-w-md mx-auto">
+<button class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold text-lg h-14 rounded-xl shadow-lg shadow-primary/25 transition-all transform active:scale-[0.98] flex items-center justify-center gap-2">
+<span>Sounds Good</span>
+<span class="material-symbols-outlined text-[20px]">check</span>
+</button>
+</div>
+</body></html>

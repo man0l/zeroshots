@@ -35,7 +35,8 @@ export default function RootLayout() {
     if (!isReady) return
     if (DEV_BYPASS_AUTH) {
       const inTabs = segments[0] === '(tabs)'
-      if (!inTabs && segments[0] !== 'review-session' && segments[0] !== 'paywall') {
+      const inAuth = segments[0] === '(auth)'
+      if (!inTabs && !inAuth && segments[0] !== 'review-session' && segments[0] !== 'paywall') {
         router.replace('/(tabs)/inbox')
       }
       return
