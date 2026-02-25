@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   View,
   Text,
@@ -9,7 +9,10 @@ import {
   ViewStyle,
   Image,
   ImageBackground,
+  Animated,
+  Easing,
 } from 'react-native'
+import { Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
 import * as MediaLibrary from 'expo-media-library'
@@ -20,9 +23,186 @@ import { colors, spacing, radii, shadows } from '../../src/lib/theme'
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window')
 
-type SlideId = 'welcome' | 'mechanic' | 'safety'
+type SlideId = 'welcome' | 'mechanic' | 'safety' | 'gallery'
 
-const SLIDES: SlideId[] = ['welcome', 'mechanic', 'safety']
+const SLIDES: SlideId[] = ['welcome', 'mechanic', 'safety', 'gallery']
+
+const GALLERY_VISUAL_SIZE = 256
+const ICON_BOX_SIZE = 160
+
+function GalleryVisual() {
+  const nativeDriven = Platform.OS !== 'web'
+  const spinAnim = useRef(new Animated.Value(0)).current
+  const spinRevAnim = useRef(new Animated.Value(0)).current
+  const scanAnim = useRef(new Animated.Value(0)).current
+  const pulseAnim = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(spinAnim, { toValue: 1, duration: 10000, easing: Easing.linear, useNativeDriver: nativeDriven })
+    ).start()
+    Animated.loop(
+      Animated.timing(spinRevAnim, { toValue: 1, duration: 15000, easing: Easing.linear, useNativeDriver: nativeDriven })
+    ).start()
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(scanAnim, { toValue: 1, duration: 3000, easing: Easing.inOut(Easing.ease), useNativeDriver: nativeDriven }),
+        Animated.timing(scanAnim, { toValue: 0, duration: 0, useNativeDriver: nativeDriven }),
+      ])
+    ).start()
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, { toValue: 1, duration: 900, useNativeDriver: nativeDriven }),
+        Animated.timing(pulseAnim, { toValue: 0.2, duration: 900, useNativeDriver: nativeDriven }),
+      ])
+    ).start()
+    return () => {
+      spinAnim.stopAnimation()
+      spinRevAnim.stopAnimation()
+      scanAnim.stopAnimation()
+      pulseAnim.stopAnimation()
+    }
+  }, [])
+
+  const spin = spinAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] })
+  const spinRev = spinRevAnim.interpolate({ inputRange: [0, 1], outputRange: ['360deg', '0deg'] })
+  const scanY = scanAnim.interpolate({ inputRange: [0, 1], outputRange: [-ICON_BOX_SIZE / 2, ICON_BOX_SIZE / 2] })
+
+  return (
+    <View style={galleryVisualStyles.container}>
+      {/* Outer spinning ring */}
+      <Animated.View style={[galleryVisualStyles.outerRing, { transform: [{ rotate: spin }] }]} />
+      {/* Inner reverse-spinning dashed ring */}
+      <Animated.View style={[galleryVisualStyles.innerRing, { transform: [{ rotate: spinRev }] }]} />
+
+      {/* Central icon box */}
+      <View style={galleryVisualStyles.iconBox}>
+        <LinearGradient
+          colors={[`${colors.primary}1A`, 'transparent']}
+          style={StyleSheet.absoluteFill}
+        />
+        <MaterialCommunityIcons
+          name="account-lock"
+          size={64}
+          color={colors.primary}
+          style={galleryVisualStyles.lockIcon}
+        />
+        {/* Scanning line */}
+        <Animated.View style={[galleryVisualStyles.scanLine, { transform: [{ translateY: scanY }] }]} />
+        {/* Particles */}
+        <Animated.View style={[galleryVisualStyles.particle, galleryVisualStyles.particle1, { opacity: pulseAnim }]} />
+        <Animated.View style={[galleryVisualStyles.particle, galleryVisualStyles.particle2, { opacity: pulseAnim }]} />
+      </View>
+
+      {/* "Private" badge – bottom-right of the visual container */}
+      <View style={galleryVisualStyles.privateBadge}>
+        <MaterialCommunityIcons name="image-multiple" size={18} color={colors.primary} />
+        <Text style={galleryVisualStyles.privateBadgeText}>Private</Text>
+      </View>
+    </View>
+  )
+}
+
+interface GalleryScreenProps {
+  insets: { top: number; bottom: number }
+  onAllowAccess: () => Promise<void>
+  onSkip: () => Promise<void>
+}
+
+function GalleryScreen({ insets, onAllowAccess, onSkip }: GalleryScreenProps) {
+  const [isLoading, setIsLoading] = useState(false)
+
+  const handleAllow = async () => {
+    setIsLoading(true)
+    await onAllowAccess()
+    setIsLoading(false)
+  }
+
+  const handleWhyNeeded = () => {
+    Alert.alert(
+      'Why do we need this?',
+      "We scan your photo library locally on your device to find screenshots, duplicates, and blurry photos. Your photos never leave your device — we only read what's already stored locally.",
+      [{ text: 'Got it' }]
+    )
+  }
+
+  return (
+    <View style={[galleryScreenStyles.container, { paddingTop: insets.top }]}>
+      {/* Top nav: 4 progress bars + Skip */}
+      <View style={galleryScreenStyles.topNav}>
+        <View style={galleryScreenStyles.progressBars}>
+          {[0, 1, 2, 3].map((i) => (
+            <View
+              key={i}
+              style={[
+                galleryScreenStyles.progressBar,
+                i === 3
+                  ? galleryScreenStyles.progressBarActive
+                  : galleryScreenStyles.progressBarDone,
+              ]}
+            />
+          ))}
+        </View>
+        <Pressable
+          onPress={onSkip}
+          style={galleryScreenStyles.skipBtn}
+          accessibilityRole="button"
+          accessibilityLabel="Skip"
+        >
+          <Text style={galleryScreenStyles.skipBtnText}>Skip</Text>
+        </Pressable>
+      </View>
+
+      {/* Visual */}
+      <View style={galleryScreenStyles.visualArea}>
+        <GalleryVisual />
+      </View>
+
+      {/* Text content */}
+      <View style={galleryScreenStyles.textSection}>
+        <Text style={galleryScreenStyles.title}>
+          Let's find your{'\n'}
+          <Text style={galleryScreenStyles.titleHighlight}>clutter.</Text>
+        </Text>
+        <Text style={galleryScreenStyles.description}>
+          To start analyzing your screenshots and duplicates, we need access to your photo library.
+        </Text>
+        <View style={galleryScreenStyles.privacyNote}>
+          <MaterialCommunityIcons name="shield-lock" size={14} color={colors.primary} />
+          <Text style={galleryScreenStyles.privacyNoteText}>Your photos never leave your device.</Text>
+        </View>
+      </View>
+
+      {/* Actions */}
+      <View style={[galleryScreenStyles.actionsSection, { paddingBottom: insets.bottom + spacing.lg }]}>
+        <Pressable
+          style={[galleryScreenStyles.allowButton, isLoading && galleryScreenStyles.allowButtonDisabled]}
+          onPress={handleAllow}
+          disabled={isLoading}
+          accessibilityRole="button"
+          accessibilityLabel="Allow Photo Access"
+        >
+          <View style={galleryScreenStyles.allowButtonContent}>
+            <Text style={galleryScreenStyles.allowButtonText}>
+              {isLoading ? 'Please wait...' : 'Allow Photo Access'}
+            </Text>
+            {!isLoading && (
+              <MaterialCommunityIcons name="arrow-right" size={20} color={colors.background} />
+            )}
+          </View>
+        </Pressable>
+
+        <Pressable
+          style={galleryScreenStyles.whyButton}
+          onPress={handleWhyNeeded}
+          accessibilityRole="button"
+        >
+          <Text style={galleryScreenStyles.whyButtonText}>Why do we need this?</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
 
 function WelcomeVisual() {
   return (
@@ -288,8 +468,9 @@ export default function OnboardingScreen() {
     }
   }
 
-  const handleSkip = async () => {
-    await requestPermissionAndFinish()
+  const handleSkip = () => {
+    // Skip educational slides → jump straight to gallery/permission screen
+    setCurrentIndex(3)
   }
 
   const renderCurrentSlide = () => {
@@ -334,6 +515,16 @@ export default function OnboardingScreen() {
   const headerTitle = currentIndex === 1 ? 'How to use' : currentIndex === 2 ? 'Safety Net' : ''
 
   const slideBackground = currentIndex === 1 ? '#0B1A0E' : colors.background
+
+  if (currentIndex === 3) {
+    return (
+      <GalleryScreen
+        insets={insets}
+        onAllowAccess={requestPermissionAndFinish}
+        onSkip={finishOnboarding}
+      />
+    )
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: slideBackground }]}>
@@ -938,5 +1129,235 @@ const visualStyles = StyleSheet.create({
     height: 64,
     borderRadius: radii.xl,
     transform: [{ rotate: '-6deg' }],
+  },
+})
+
+const galleryVisualStyles = StyleSheet.create({
+  container: {
+    width: GALLERY_VISUAL_SIZE,
+    height: GALLERY_VISUAL_SIZE,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  outerRing: {
+    position: 'absolute',
+    width: GALLERY_VISUAL_SIZE,
+    height: GALLERY_VISUAL_SIZE,
+    borderRadius: GALLERY_VISUAL_SIZE / 2,
+    borderWidth: 1,
+    borderColor: `${colors.primary}33`,
+  },
+  innerRing: {
+    position: 'absolute',
+    width: GALLERY_VISUAL_SIZE - 32,
+    height: GALLERY_VISUAL_SIZE - 32,
+    borderRadius: (GALLERY_VISUAL_SIZE - 32) / 2,
+    borderWidth: 1,
+    borderColor: `${colors.primary}4D`,
+    borderStyle: 'dashed',
+  },
+  iconBox: {
+    width: ICON_BOX_SIZE,
+    height: ICON_BOX_SIZE,
+    borderRadius: 28,
+    backgroundColor: colors.backgroundDeep,
+    borderWidth: 1,
+    borderColor: `${colors.primary}4D`,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 12,
+  },
+  lockIcon: {
+    textShadowColor: `${colors.primary}99`,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 15,
+  },
+  scanLine: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: 2,
+    backgroundColor: `${colors.primary}80`,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 6,
+  },
+  particle: {
+    position: 'absolute',
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+  },
+  particle1: {
+    width: 5,
+    height: 5,
+    top: 24,
+    left: 24,
+  },
+  particle2: {
+    width: 7,
+    height: 7,
+    bottom: 20,
+    right: 28,
+  },
+  privateBadge: {
+    position: 'absolute',
+    bottom: -8,
+    right: -8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: `${colors.primary}40`,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+  },
+  privateBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+})
+
+const galleryScreenStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  progressBars: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  progressBar: {
+    height: 6,
+    width: 32,
+    borderRadius: radii.full,
+  },
+  progressBarDone: {
+    backgroundColor: `${colors.primary}30`,
+  },
+  progressBarActive: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 8,
+  },
+  skipBtn: {
+    paddingVertical: spacing.xs,
+    paddingLeft: spacing.sm,
+  },
+  skipBtnText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+  visualArea: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  textSection: {
+    paddingHorizontal: spacing.lg,
+    alignItems: 'center',
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  title: {
+    fontSize: 40,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    lineHeight: 44,
+    letterSpacing: -0.5,
+  },
+  titleHighlight: {
+    color: colors.primary,
+    textShadowColor: `${colors.primary}4D`,
+    textShadowOffset: { width: 0, height: 0 },
+    textShadowRadius: 10,
+  },
+  description: {
+    fontSize: 17,
+    color: '#CBD5E1',
+    textAlign: 'center',
+    lineHeight: 26,
+    maxWidth: 320,
+  },
+  privacyNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    backgroundColor: `${colors.primary}0D`,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: `${colors.primary}1A`,
+  },
+  privacyNoteText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: `${colors.primary}E6`,
+  },
+  actionsSection: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+  },
+  allowButton: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.full,
+    height: 56,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  allowButtonDisabled: {
+    opacity: 0.7,
+  },
+  allowButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  allowButtonText: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.background,
+  },
+  whyButton: {
+    alignItems: 'center',
+    paddingVertical: spacing.sm,
+  },
+  whyButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.textMuted,
   },
 })

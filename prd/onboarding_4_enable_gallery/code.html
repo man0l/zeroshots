@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Swipe-to-Clean Onboarding</title>
+<!-- Fonts -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<!-- Material Symbols -->
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind Config -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#3ac2f8", // Vibrant Cyan
+                        "background-light": "#f5f7f8",
+                        "background-dark": "#101d23", // Deep dark navy close to #0F172A
+                    },
+                    fontFamily: {
+                        "display": ["Space Grotesk", "sans-serif"],
+                        "body": ["Inter", "sans-serif"],
+                    },
+                    borderRadius: {"DEFAULT": "1rem", "lg": "2rem", "xl": "3rem", "full": "9999px"},
+                    boxShadow: {
+                        'glow': '0 0 20px -5px rgba(58, 194, 248, 0.5)',
+                        'glow-lg': '0 0 40px -10px rgba(58, 194, 248, 0.4)',
+                    }
+                },
+            },
+        }
+    </script>
+<style>
+        .cyber-grid {
+            background-image: linear-gradient(rgba(58, 194, 248, 0.05) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(58, 194, 248, 0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        /* Subtle scanline effect */
+        .scanlines {
+            background: linear-gradient(
+                to bottom,
+                rgba(255,255,255,0),
+                rgba(255,255,255,0) 50%,
+                rgba(0,0,0,0.2) 50%,
+                rgba(0,0,0,0.2)
+            );
+            background-size: 100% 4px;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background-light dark:bg-background-dark min-h-screen flex flex-col font-display antialiased selection:bg-primary selection:text-background-dark relative overflow-hidden">
+<!-- Background Effects -->
+<div class="absolute inset-0 cyber-grid pointer-events-none opacity-50"></div>
+<div class="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-background-dark/90 pointer-events-none"></div>
+<!-- Decorative Glowing Orbs -->
+<div class="absolute -top-[20%] -right-[20%] w-[600px] h-[600px] bg-primary/5 rounded-full blur-[100px] pointer-events-none"></div>
+<div class="absolute top-[30%] -left-[20%] w-[400px] h-[400px] bg-primary/10 rounded-full blur-[80px] pointer-events-none"></div>
+<!-- Main Content Container -->
+<div class="relative flex flex-col h-full min-h-screen w-full max-w-md mx-auto p-6 z-10">
+<!-- Top Navigation Area -->
+<div class="flex items-center justify-between w-full pt-2 pb-6">
+<!-- Progress Indicator -->
+<div class="flex gap-2">
+<div class="h-1.5 w-8 rounded-full bg-primary/30"></div>
+<div class="h-1.5 w-8 rounded-full bg-primary/30"></div>
+<div class="h-1.5 w-8 rounded-full bg-primary/30"></div>
+<div class="h-1.5 w-8 rounded-full bg-primary shadow-glow"></div>
+</div>
+<button class="text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-primary transition-colors">
+                Skip
+            </button>
+</div>
+<!-- Main Visual / Illustration Area -->
+<div class="flex-1 flex flex-col items-center justify-center py-8">
+<div class="relative w-64 h-64 mb-8">
+<!-- Outer glowing rings -->
+<div class="absolute inset-0 rounded-full border border-primary/20 animate-[spin_10s_linear_infinite]"></div>
+<div class="absolute inset-4 rounded-full border border-dashed border-primary/30 animate-[spin_15s_linear_infinite_reverse]"></div>
+<!-- Central Icon Container -->
+<div class="absolute inset-0 flex items-center justify-center">
+<div class="relative w-40 h-40 bg-background-dark border border-primary/30 rounded-3xl flex items-center justify-center shadow-glow-lg overflow-hidden group">
+<!-- Inner Gradient Background -->
+<div class="absolute inset-0 bg-gradient-to-br from-primary/10 to-transparent"></div>
+<!-- Biometric Lock Icon -->
+<span class="material-symbols-outlined text-[64px] text-primary z-10 drop-shadow-[0_0_15px_rgba(58,194,248,0.6)]">
+                            lock_person
+                        </span>
+<!-- Simulated scanning line -->
+<div class="absolute top-0 left-0 w-full h-1 bg-primary/50 shadow-[0_0_15px_#3ac2f8] animate-[scan_3s_ease-in-out_infinite] opacity-50"></div>
+<!-- Floating particles -->
+<div class="absolute w-1 h-1 bg-primary rounded-full top-10 left-10 animate-ping"></div>
+<div class="absolute w-1.5 h-1.5 bg-primary/60 rounded-full bottom-8 right-12 animate-pulse"></div>
+</div>
+</div>
+<!-- Floating 'Gallery' Badge -->
+<div class="absolute -bottom-2 -right-2 bg-background-dark border border-primary/40 rounded-xl p-3 shadow-lg flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-xl">photo_library</span>
+<span class="text-xs font-bold text-slate-200 dark:text-slate-200 tracking-wide uppercase">Private</span>
+</div>
+</div>
+</div>
+<!-- Text Content -->
+<div class="flex flex-col items-center text-center space-y-6 pb-8">
+<div class="space-y-4">
+<h1 class="text-slate-900 dark:text-white text-4xl font-bold leading-[1.1] tracking-tight">
+                    Let's find your <span class="text-primary drop-shadow-[0_0_10px_rgba(58,194,248,0.3)]">clutter.</span>
+</h1>
+<p class="font-body text-slate-600 dark:text-slate-300 text-lg leading-relaxed max-w-[320px] mx-auto">
+                    To start analyzing your screenshots and duplicates, we need access to your photo library. 
+                    <span class="block mt-4 text-sm font-semibold text-primary/90 bg-primary/5 py-2 px-3 rounded-lg border border-primary/10 inline-block">
+<span class="material-symbols-outlined align-middle text-sm mr-1">shield_lock</span>
+                        Your photos never leave your device.
+                    </span>
+</p>
+</div>
+<!-- Action Area -->
+<div class="w-full pt-4 pb-6 space-y-4">
+<button class="relative w-full group overflow-hidden rounded-full h-14 bg-primary text-background-dark text-lg font-bold tracking-wide shadow-glow hover:shadow-glow-lg transition-all duration-300 transform active:scale-[0.98]">
+<div class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out rounded-full"></div>
+<span class="relative flex items-center justify-center gap-2">
+                        Allow Photo Access
+                        <span class="material-symbols-outlined text-xl font-bold">arrow_forward</span>
+</span>
+</button>
+<button class="w-full text-slate-500 dark:text-slate-400 text-sm font-medium hover:text-slate-700 dark:hover:text-slate-200 transition-colors py-2">
+                    Why do we need this?
+                </button>
+</div>
+</div>
+</div>
+<!-- Scanline animation keyframes -->
+<style>
+        @keyframes scan {
+            0% { top: 0%; opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { top: 100%; opacity: 0; }
+        }
+    </style>
+</body></html>
