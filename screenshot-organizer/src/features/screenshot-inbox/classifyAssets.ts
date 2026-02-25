@@ -2,6 +2,9 @@ import { supabase, edgeFn } from '../../lib/supabase/client'
 import { useAuthStore } from '../../state/auth.store'
 import { useSettingsStore } from '../../state/settings.store'
 import { Platform } from 'react-native'
+import * as FileSystem from 'expo-file-system/legacy'
+import { mapOnDeviceLabelsToTags } from './onDeviceTagMapping'
+import ExpoScreenshotClassify from 'expo-screenshot-classify'
 
 export interface ClassifiedAsset {
   id: string
@@ -44,29 +47,116 @@ function classifyByHeuristics(
   return tags
 }
 
-// Convert image URI to base64
-async function imageToBase64(uri: string): Promise<string | null> {
+// On-device classification: returns raw labels from native (Vision on iOS, ML Kit on Android) or [] if unavailable.
+async function getOnDeviceLabels(uri: string): Promise<string[]> {
+  if (Platform.OS === 'ios' && ExpoScreenshotClassify?.classifyImageAsync) {
+    try {
+      return await ExpoScreenshotClassify.classifyImageAsync(uri)
+    } catch {
+      return []
+    }
+  }
+  // Android: ML Kit is used when @react-native-ml-kit/image-labeling is installed (see getOnDeviceLabelsAndroid).
+  if (Platform.OS === 'android') {
+    return getOnDeviceLabelsAndroid(uri)
+  }
+  return []
+}
+
+// Android: ML Kit image labeling. Returns [] if package unavailable (e.g. Expo Go).
+async function getOnDeviceLabelsAndroid(uri: string): Promise<string[]> {
+  let tempPath: string | null = null
   try {
-    if (Platform.OS !== 'web') {
-      // Avoid aggressive image conversion on native devices; metadata-only classification is more stable.
-      return null
+    let imageUri = uri
+    if (uri.startsWith('content://')) {
+      const cacheDir = FileSystem.cacheDirectory
+      if (!cacheDir) return []
+      tempPath = `${cacheDir}screenshot_classify_${Date.now()}.jpg`
+      await FileSystem.copyAsync({ from: uri, to: tempPath })
+      imageUri = tempPath
+    }
+    const ImageLabeling = require('@react-native-ml-kit/image-labeling').default
+    const result = await ImageLabeling.label(imageUri)
+    if (Array.isArray(result)) {
+      return result.map((r: { text?: string; label?: string }) => r?.text ?? r?.label ?? String(r))
+    }
+    if (result?.labels) {
+      return result.labels.map((l: { text?: string; label?: string }) => l?.text ?? l?.label ?? '')
+    }
+    return []
+  } catch {
+    return []
+  } finally {
+    if (tempPath) {
+      try {
+        await FileSystem.deleteAsync(tempPath, { idempotent: true })
+      } catch {
+        // ignore cleanup failure; cache will evict
+      }
+    }
+  }
+}
+
+// Run async tasks with a concurrency limit; returns results in input order.
+async function runWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T, index: number) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let index = 0
+  async function worker(): Promise<void> {
+    while (index < items.length) {
+      const i = index++
+      const item = items[i]
+      results[i] = await fn(item, i)
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, () => worker()))
+  return results
+}
+
+// Max image size to send for AI (Gemini limit ~4MB; keep under to avoid timeouts)
+const MAX_IMAGE_BYTES_FOR_AI = 3 * 1024 * 1024
+
+// Convert image URI to base64 (web: fetch + FileReader; native: expo-file-system)
+async function imageToBase64(
+  uri: string,
+  sizeBytes?: number
+): Promise<string | null> {
+  try {
+    if (Platform.OS === 'web') {
+      const response = await fetch(uri)
+      const blob = await response.blob()
+      return await new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onloadend = () => {
+          const base64 = reader.result as string
+          const base64Data = base64.split(',')[1]
+          resolve(base64Data ?? null)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(blob)
+      })
     }
 
-    const response = await fetch(uri)
-    const blob = await response.blob()
+    // Native (Android/iOS): read file with expo-file-system
+    const localUri = uri.startsWith('file://') || uri.startsWith('content://')
+      ? uri
+      : (uri.startsWith('/') ? `file://${uri}` : uri)
 
-    return await new Promise((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const base64 = reader.result as string
-        const base64Data = base64.split(',')[1]
-        resolve(base64Data)
-      }
-      reader.onerror = reject
-      reader.readAsDataURL(blob)
+    const info = await FileSystem.getInfoAsync(localUri)
+    if (!info.exists || info.isDirectory) return null
+    const fileSize = 'size' in info ? info.size : 0
+    if (fileSize > MAX_IMAGE_BYTES_FOR_AI) return null
+    if (typeof sizeBytes === 'number' && sizeBytes > MAX_IMAGE_BYTES_FOR_AI) return null
+
+    const base64 = await FileSystem.readAsStringAsync(localUri, {
+      encoding: 'base64',
     })
+    return base64 || null
   } catch (error) {
-    console.error('Failed to convert image to base64:', error)
+    console.warn('Failed to convert image to base64:', error)
     return null
   }
 }
@@ -92,51 +182,46 @@ export async function classifyAssets(
     }))
   }
 
-  const { user } = useAuthStore.getState()
-
-  if (!user) {
-    console.warn('No user logged in, skipping classification')
-    return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
-  }
-
-  const classifiedAssets: ClassifiedAsset[] = []
-
-  for (const asset of assets) {
-    try {
-      console.log(`Classifying asset: ${asset.filename}`)
-      
-      // Convert image to base64
-      const imageBase64 = await imageToBase64(asset.uri)
-      
-      // Call classification edge function
-      const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
-        body: {
-          asset_id: asset.id,
-          filename: asset.filename,
-          width: asset.width,
-          height: asset.height,
-          size_bytes: asset.size,
-          user_id: user.id,
-          image_base64: imageBase64,
-        },
-      })
-
-      if (error) {
-        console.warn('Classification failed for asset:', asset.id, error)
-        classifiedAssets.push({ ...asset, tags: ['screenshot'] })
-      } else {
-        console.log(`Classified ${asset.filename} as:`, data.tags)
-        classifiedAssets.push({
-          ...asset,
-          tags: data.tags || ['screenshot'],
-        })
-      }
-    } catch (err) {
-      console.error('Error classifying asset:', err)
-      classifiedAssets.push({ ...asset, tags: ['screenshot'] })
+  // Web: use Gemini (requires user)
+  if (Platform.OS === 'web') {
+    const { user } = useAuthStore.getState()
+    if (!user) {
+      return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
     }
+    const CONCURRENCY = 2
+    return runWithConcurrency(assets, CONCURRENCY, async (asset) => {
+      try {
+        const imageBase64 = await imageToBase64(asset.uri, asset.size)
+        const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
+          body: {
+            asset_id: asset.id,
+            filename: asset.filename,
+            width: asset.width,
+            height: asset.height,
+            size_bytes: asset.size,
+            user_id: user.id,
+            image_base64: imageBase64,
+          },
+        })
+        if (error) return { ...asset, tags: ['screenshot'] as string[] }
+        return { ...asset, tags: (data?.tags as string[]) || ['screenshot'] }
+      } catch {
+        return { ...asset, tags: ['screenshot'] as string[] }
+      }
+    })
   }
 
+  // Native (iOS/Android): on-device classification (Vision / ML Kit), no login required
+  const CONCURRENCY = 2
+  const classifiedAssets = await runWithConcurrency(assets, CONCURRENCY, async (asset) => {
+    try {
+      const labels = await getOnDeviceLabels(asset.uri)
+      const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
+      return { ...asset, tags }
+    } catch {
+      return { ...asset, tags: classifyByHeuristics(asset.filename, asset.width, asset.height, asset.size) }
+    }
+  })
   return classifiedAssets
 }
 
@@ -155,7 +240,6 @@ export async function classifyAssetsBatch(
 ): Promise<ClassifiedAsset[]> {
   const { aiEnabled } = useSettingsStore.getState()
 
-  // AI disabled → instant on-device classification
   if (!aiEnabled) {
     const results = assets.map((a, i) => {
       onProgress?.(i + 1, assets.length)
@@ -164,56 +248,54 @@ export async function classifyAssetsBatch(
     return results
   }
 
-  const { user } = useAuthStore.getState()
-
-  if (!user) {
-    console.warn('No user logged in, skipping classification')
-    return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
+  // Web: use Gemini (requires user)
+  if (Platform.OS === 'web') {
+    const { user } = useAuthStore.getState()
+    if (!user) {
+      return assets.map(a => ({ ...a, tags: classifyByHeuristics(a.filename, a.width, a.height, a.size) }))
+    }
+    const results: ClassifiedAsset[] = []
+    const total = assets.length
+    for (let i = 0; i < assets.length; i++) {
+      const asset = assets[i]
+      try {
+        const imageBase64 = await imageToBase64(asset.uri, asset.size)
+        const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
+          body: {
+            asset_id: asset.id,
+            filename: asset.filename,
+            width: asset.width,
+            height: asset.height,
+            size_bytes: asset.size,
+            user_id: user.id,
+            image_base64: imageBase64,
+          },
+        })
+        results.push({ ...asset, tags: error ? ['screenshot'] : (data?.tags || ['screenshot']) })
+      } catch {
+        results.push({ ...asset, tags: ['screenshot'] })
+      }
+      onProgress?.(i + 1, total)
+      if (i < assets.length - 1) await new Promise(r => setTimeout(r, 500))
+    }
+    return results
   }
 
+  // Native: on-device (Vision / ML Kit)
   const results: ClassifiedAsset[] = []
   const total = assets.length
-
   for (let i = 0; i < assets.length; i++) {
     const asset = assets[i]
-    
     try {
-      // Convert image to base64
-      const imageBase64 = await imageToBase64(asset.uri)
-      
-      // Call classification edge function
-      const { data, error } = await supabase.functions.invoke(edgeFn('classify-image'), {
-        body: {
-          asset_id: asset.id,
-          filename: asset.filename,
-          width: asset.width,
-          height: asset.height,
-          size_bytes: asset.size,
-          user_id: user.id,
-          image_base64: imageBase64,
-        },
-      })
-
-      if (error) {
-        console.warn('Classification failed:', asset.id, error)
-        results.push({ ...asset, tags: ['screenshot'] })
-      } else {
-        results.push({ ...asset, tags: data.tags || ['screenshot'] })
-      }
-      
-      // Report progress
-      onProgress?.(i + 1, total)
-      
-      // Small delay between requests to avoid rate limiting
-      if (i < assets.length - 1) {
-        await new Promise(resolve => setTimeout(resolve, 500))
-      }
-    } catch (err) {
-      console.error('Error classifying asset:', err)
-      results.push({ ...asset, tags: ['screenshot'] })
+      const labels = await getOnDeviceLabels(asset.uri)
+      const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
+      results.push({ ...asset, tags })
+    } catch {
+      results.push({ ...asset, tags: classifyByHeuristics(asset.filename, asset.width, asset.height, asset.size) })
     }
+    onProgress?.(i + 1, total)
+    if (i < assets.length - 1) await new Promise(r => setTimeout(r, 200))
   }
-
   return results
 }
 

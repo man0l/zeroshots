@@ -89,20 +89,16 @@ export function useGallery() {
     try {
       setIsClassifying(true)
 
-      // Queue with strict concurrency=1: classify each asset sequentially.
-      for (const screenshot of screenshots) {
-        // Stop if a newer classification run has started.
-        if (classificationRunIdRef.current !== runId) return
+      // Classify entire batch in one call (internal concurrency + single setState).
+      const classified = await classifyAssets(screenshots)
+      if (classificationRunIdRef.current !== runId) return
 
-        const [classified] = await classifyAssets([screenshot])
-        if (!classified) continue
-
-        setAssets((prev) =>
-          prev.map((asset) =>
-            asset.id === classified.id ? { ...asset, tags: classified.tags } : asset
-          )
-        )
-      }
+      setAssets((prev) =>
+        prev.map((asset) => {
+          const c = classified.find((x) => x.id === asset.id)
+          return c ? { ...asset, tags: c.tags } : asset
+        })
+      )
     } catch (err) {
       console.error('Classification error:', err)
     } finally {

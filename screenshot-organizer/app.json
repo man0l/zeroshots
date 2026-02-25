@@ -16,7 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "infoPlist": {
-        "NSPhotoLibraryUsageDescription": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, thumbnails are securely processed by Google Gemini."
+        "NSPhotoLibraryUsageDescription": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, images are classified on-device (no upload). On web, thumbnails may be processed by Google Gemini."
       }
     },
     "android": {
@@ -42,7 +42,7 @@
       [
         "expo-media-library",
         {
-          "photosPermission": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, thumbnails are securely processed by Google Gemini."
+          "photosPermission": "We scan your photo library to find screenshots and duplicates. If you enable AI sorting, images are classified on-device (no upload). On web, thumbnails may be processed by Google Gemini."
         }
       ]
     ]

@@ -1,0 +1,19 @@
+{
+  "name": "expo-screenshot-classify",
+  "version": "1.0.0",
+  "description": "On-device image classification using Apple Vision (iOS) for screenshot organizer",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "sideEffects": false,
+  "author": "Screenshot Organizer",
+  "license": "MIT",
+  "scripts": {
+    "build": "expo-module build"
+  },
+  "peerDependencies": {
+    "expo": "*"
+  },
+  "devDependencies": {
+    "expo-module-scripts": "^5.0.8"
+  }
+}
