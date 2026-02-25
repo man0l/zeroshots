@@ -374,31 +374,33 @@ export default function OnboardingScreen() {
 
       {/* Bottom section */}
       <View style={[styles.bottomSection, { paddingBottom: insets.bottom + spacing.lg }]}>
-        {/* Pagination */}
-        <View style={styles.pagination}>
-          {SLIDES.map((_, index) => {
-            const isActive = index === currentIndex
-            const activeColor = currentIndex === 1 ? colors.keep : colors.primary
-            return (
-              <View
-                key={index}
-                style={[
-                  styles.paginationDot,
-                  isActive && [
-                    styles.paginationDotActive,
-                    { backgroundColor: activeColor },
-                    {
-                      shadowColor: activeColor,
-                      shadowOffset: { width: 0, height: 0 },
-                      shadowOpacity: 0.6,
-                      shadowRadius: 10,
-                    },
-                  ],
-                ]}
-              />
-            )
-          })}
-        </View>
+        {/* On welcome slide: button first, dots below. On other slides: dots first, button below. */}
+        {currentIndex > 0 && (
+          <View style={styles.pagination}>
+            {SLIDES.map((_, index) => {
+              const isActive = index === currentIndex
+              const activeColor = currentIndex === 1 ? colors.keep : colors.primary
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    isActive && [
+                      styles.paginationDotActive,
+                      { backgroundColor: activeColor },
+                      {
+                        shadowColor: activeColor,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 10,
+                      },
+                    ],
+                  ]}
+                />
+              )
+            })}
+          </View>
+        )}
 
         {/* Button */}
         <Pressable
@@ -420,6 +422,33 @@ export default function OnboardingScreen() {
             )}
           </View>
         </Pressable>
+
+        {/* On welcome slide: dots rendered below the button */}
+        {currentIndex === 0 && (
+          <View style={[styles.pagination, styles.paginationBelow]}>
+            {SLIDES.map((_, index) => {
+              const isActive = index === currentIndex
+              return (
+                <View
+                  key={index}
+                  style={[
+                    styles.paginationDot,
+                    isActive && [
+                      styles.paginationDotActive,
+                      { backgroundColor: colors.primary },
+                      {
+                        shadowColor: colors.primary,
+                        shadowOffset: { width: 0, height: 0 },
+                        shadowOpacity: 0.6,
+                        shadowRadius: 10,
+                      },
+                    ],
+                  ]}
+                />
+              )
+            })}
+          </View>
+        )}
       </View>
     </View>
   )
@@ -476,6 +505,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
     marginBottom: spacing.lg,
+  },
+  paginationBelow: {
+    marginBottom: 0,
+    marginTop: spacing.md,
   },
   paginationDot: {
     width: 8,
