@@ -6,6 +6,7 @@ import {
   Pressable,
   StyleSheet,
   Linking,
+  type TextStyle,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useRouter } from 'expo-router'
@@ -21,8 +22,8 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   )
 }
 
-function Body({ children }: { children: React.ReactNode }) {
-  return <Text style={styles.body}>{children}</Text>
+function Body({ children, style }: { children: React.ReactNode; style?: TextStyle }) {
+  return <Text style={[styles.body, style]}>{children}</Text>
 }
 
 function Bullet({ children }: { children: React.ReactNode }) {
