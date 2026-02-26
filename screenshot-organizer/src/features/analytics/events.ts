@@ -1,3 +1,28 @@
+import { supabase, edgeFn } from '../../lib/supabase/client'
+import { useSettingsStore } from '../../state/settings.store'
+
+/** Event payload for so-event-ingest edge function */
+export interface IngestEvent {
+  user_id: string | null
+  event_name: string
+  properties?: Record<string, unknown>
+  timestamp?: string
+}
+
+/** Send events via so-event-ingest edge function (bypasses Kong credential stripping). */
+export async function ingestEvents(events: IngestEvent[]): Promise<{ error?: Error }> {
+  if (events.length === 0) return {}
+  try {
+    const { error } = await supabase.functions.invoke(edgeFn('event-ingest'), {
+      body: { events },
+    })
+    if (error) return { error }
+    return {}
+  } catch (e) {
+    return { error: e instanceof Error ? e : new Error(String(e)) }
+  }
+}
+
 export type EventName =
   | 'session_started'
   | 'session_completed'
@@ -15,13 +40,35 @@ export interface EventProperties {
 }
 
 export function trackEvent(name: EventName, properties?: EventProperties): void {
-  console.log('[Analytics]', name, properties)
-  
-  // In production, send to Supabase edge function:
-  // import { supabase, edgeFn } from '../../lib/supabase/client'
-  // await supabase.functions.invoke(edgeFn('event-ingest'), {
-  //   body: { event_name: name, properties }
-  // })
+  if (__DEV__) {
+    console.log('[Analytics]', name, properties)
+  }
+
+  const { analyticsEnabled } = useSettingsStore.getState()
+  if (!analyticsEnabled) return
+
+  void (async () => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const userId = session?.user?.id ?? null
+      if (!userId) return
+
+      const { error } = await ingestEvents([{
+        user_id: userId,
+        event_name: name,
+        properties: properties ?? {},
+        timestamp: new Date().toISOString(),
+      }])
+
+      if (error && __DEV__) {
+        console.warn('[Analytics] Failed to send event:', error)
+      }
+    } catch (e) {
+      if (__DEV__) {
+        console.warn('[Analytics] Failed to send event:', e)
+      }
+    }
+  })()
 }
 
 export const events = {

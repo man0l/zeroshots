@@ -15,6 +15,7 @@ import { useGallery } from '../../src/hooks/useGallery'
 import { useSessionStore } from '../../src/state/session.store'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
 import { useSettingsStore } from '../../src/state/settings.store'
+import { events } from '../../src/features/analytics/events'
 import { colors, fonts, spacing, radii, shadows, swipeThresholds } from '../../src/lib/theme'
 import { getTagColor, classifyAssets } from '../../src/features/screenshot-inbox/classifyAssets'
 import { setCachedTags } from '../../src/features/screenshot-inbox/classificationCache'
@@ -59,6 +60,7 @@ export default function InboxScreen() {
     if (ids !== sessionAssetIdsRef.current) {
       sessionAssetIdsRef.current = ids
       startSession(assets)
+      events.sessionStarted(assets.length)
     }
   }, [assets, startSession])
 
@@ -91,19 +93,26 @@ export default function InboxScreen() {
     }
 
     if (action === 'delete' && entitlement === 'free' && deletesRemaining <= 0) {
+      const { trustLimit } = useEntitlementStore.getState()
+      events.paywallShown(trustLimit - deletesRemaining)
       router.push('/paywall')
       return
     }
 
     recordAction(action)
-    
+
     if (action === 'delete') {
+      events.assetDeleted(asset.id, asset.size ?? 0)
       useEntitlementStore.getState().decrementDeletes()
       try {
         await deleteAsset(asset.id)
       } catch (e) {
         console.error('Failed to delete asset from library:', e)
       }
+    } else if (action === 'keep') {
+      events.assetKept(asset.id)
+    } else if (action === 'archive') {
+      events.assetArchived(asset.id)
     }
 
     translateX.value = withSpring(
@@ -256,6 +265,7 @@ export default function InboxScreen() {
             style={styles.finishButton}
             onPress={() => {
               const stats = endSession()
+              events.sessionCompleted(stats.deletedCount, stats.archivedCount, stats.savedBytes)
               router.push('/review-session')
             }}
             accessibilityRole="button"

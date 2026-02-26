@@ -1,4 +1,5 @@
 import { supabase, edgeFn } from '../../lib/supabase/client'
+import { ingestEvents } from '../analytics/events'
 import { useSessionStore } from '../../state/session.store'
 
 export async function saveSessionToSupabase(userId: string) {
@@ -65,24 +66,18 @@ export async function saveSessionToSupabase(userId: string) {
     }
   }
 
-  // 4. Send analytics events
-  const { error: analyticsError } = await supabase.functions.invoke(edgeFn('event-ingest'), {
-    body: {
-      events: [
-        {
-          user_id: userId,
-          name: 'session_completed',
-          properties: {
-            reviewed_count: reviewedCount,
-            deleted_count: deletedCount,
-            archived_count: archivedCount,
-            saved_bytes: savedBytes,
-          },
-          timestamp: new Date().toISOString(),
-        },
-      ],
+  // 4. Send analytics event via edge function
+  const { error: analyticsError } = await ingestEvents([{
+    user_id: userId,
+    event_name: 'session_completed',
+    properties: {
+      reviewed_count: reviewedCount,
+      deleted_count: deletedCount,
+      archived_count: archivedCount,
+      saved_bytes: savedBytes,
     },
-  })
+    timestamp: new Date().toISOString(),
+  }])
 
   if (analyticsError) {
     console.error('Failed to send analytics:', analyticsError)

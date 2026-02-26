@@ -1,5 +1,6 @@
 import { Platform } from 'react-native'
-import { supabase, edgeFn } from '../../lib/supabase/client'
+import { supabase } from '../../lib/supabase/client'
+import { ingestEvents } from './events'
 import { useSettingsStore } from '../../state/settings.store'
 
 type MlSource = 'ios_vision' | 'android_mlkit'
@@ -27,30 +28,24 @@ export async function logMlClassification(log: MlClassificationLog): Promise<voi
   const timestamp = log.createdAt ?? new Date().toISOString()
   const { data: { session } } = await supabase.auth.getSession()
   const userId = session?.user?.id ?? null
-  const payload = {
-    events: [
-      {
-        user_id: userId,
-        name: 'ml_classification',
-        properties: {
-          source: log.source,
-          platform: Platform.OS,
-          raw_labels: log.rawLabels.slice(0, 32),
-          mapped_tags: log.tags,
-          filename: log.filename ?? null,
-        },
-        timestamp,
-      },
-    ],
-  }
+  if (!userId) return
 
   try {
     if (__DEV__) {
-      console.log('[ML Logs] Sending to Supabase event-ingest', payload)
+      console.log('[ML Logs] Sending to analytics_events', log)
     }
-    const { error } = await supabase.functions.invoke(edgeFn('event-ingest'), {
-      body: payload,
-    })
+    const { error } = await ingestEvents([{
+      user_id: userId,
+      event_name: 'ml_classification',
+      properties: {
+        source: log.source,
+        platform: Platform.OS,
+        raw_labels: log.rawLabels.slice(0, 32),
+        mapped_tags: log.tags,
+        filename: log.filename ?? null,
+      },
+      timestamp,
+    }])
     if (error && __DEV__) {
       console.warn('[ML Logs] Supabase error', error)
     }
