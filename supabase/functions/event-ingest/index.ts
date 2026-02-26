@@ -1,10 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
+
+const SCHEMA = 'screenshot_organizer'
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -12,17 +13,12 @@ serve(async (req) => {
   }
 
   try {
-    // Use service role to bypass Kong stripping credentials when proxying to PostgREST.
-    // user_id in events must match the caller's JWT sub (validated by Kong key-auth for the request).
+    // Call PostgREST directly to bypass Kong (which strips credentials). Service role for inserts.
+    const restUrl = (Deno.env.get('SUPABASE_INTERNAL_REST_URL') ?? Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
-    const supabaseClient = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      serviceKey ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      {
-        db: { schema: 'screenshot_organizer' },
-        auth: { persistSession: false, autoRefreshToken: false },
-      }
-    )
+    if (!restUrl || !serviceKey) {
+      throw new Error('SUPABASE_INTERNAL_REST_URL and service role key required')
+    }
 
     const { events } = await req.json()
 
@@ -36,7 +32,6 @@ serve(async (req) => {
       )
     }
 
-    // Validate and format events
     const formattedEvents = events.map((event: any) => ({
       user_id: event.user_id || null,
       event_name: event.name,
@@ -44,18 +39,26 @@ serve(async (req) => {
       created_at: event.timestamp || new Date().toISOString(),
     }))
 
-    // Batch insert events
-    const { error } = await supabaseClient
-      .from('analytics_events')
-      .insert(formattedEvents)
+    const res = await fetch(`${restUrl}/${SCHEMA}/analytics_events`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${serviceKey}`,
+        'apikey': serviceKey,
+        'Content-Profile': SCHEMA,
+        'Accept-Profile': SCHEMA,
+        'Prefer': 'return=minimal',
+      },
+      body: JSON.stringify(formattedEvents),
+    })
 
-    if (error) throw error
+    if (!res.ok) {
+      const text = await res.text()
+      throw new Error(text || `PostgREST ${res.status}`)
+    }
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        inserted: formattedEvents.length,
-      }),
+      JSON.stringify({ success: true, inserted: formattedEvents.length }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 200,
@@ -64,7 +67,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error ingesting events:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error?.message ?? String(error) }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
