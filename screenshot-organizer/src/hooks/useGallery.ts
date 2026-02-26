@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { Platform, AppState, type AppStateStatus } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
+import * as FileSystem from 'expo-file-system/legacy'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
 import { getCachedTags, setCachedTags } from '../features/screenshot-inbox/classificationCache'
 import { useSettingsStore } from '../state/settings.store'
@@ -17,6 +18,22 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
 const MAX_ASSETS_TO_LOAD = 300
 // AI classification cap per load to avoid heavy processing; applies to all plans.
 const MAX_ASSETS_TO_CLASSIFY = 40
+const SIZE_FETCH_BATCH = 20
+
+/** Fetch file size for an asset via getAssetInfoAsync + FileSystem. Returns 0 on failure. */
+async function fetchAssetSize(asset: MediaLibrary.Asset): Promise<number> {
+  if (Platform.OS === 'web') return 0
+  try {
+    const info = await MediaLibrary.getAssetInfoAsync(asset)
+    const uri = info.localUri ?? (asset.uri?.startsWith('file://') ? asset.uri : null)
+    if (!uri) return 0
+    const fi = await FileSystem.getInfoAsync(uri, { size: true })
+    if (fi.exists && 'size' in fi && typeof fi.size === 'number') return fi.size
+  } catch {
+    // Ignore — size stays 0
+  }
+  return 0
+}
 
 export function useGallery() {
   const isWeb = Platform.OS === 'web'
@@ -69,22 +86,29 @@ export function useGallery() {
         first: MAX_ASSETS_TO_LOAD,
       })
 
-      const ids = media.assets.filter(isScreenshot).map(a => a.id)
+      const filtered = media.assets.filter(isScreenshot)
+      const ids = filtered.map(a => a.id)
       const cached = await getCachedTags(ids)
 
-      const screenshots: ClassifiedAsset[] = media.assets
-        .filter(isScreenshot)
-        .map(asset => ({
-          id: asset.id,
-          uri: asset.uri,
-          width: asset.width,
-          height: asset.height,
-          creationTime: asset.creationTime,
-          size: 0,
-          filename: asset.filename ?? 'unknown.jpg',
-          // No default tag; empty until classified or read from cache.
-          tags: cached[asset.id] ?? [],
-        }))
+      // Fetch file sizes in batches (getAssetsAsync doesn't provide size)
+      const screenshots: ClassifiedAsset[] = []
+      for (let i = 0; i < filtered.length; i += SIZE_FETCH_BATCH) {
+        const chunk = filtered.slice(i, i + SIZE_FETCH_BATCH)
+        const sizes = await Promise.all(chunk.map(a => fetchAssetSize(a)))
+        for (let j = 0; j < chunk.length; j++) {
+          const asset = chunk[j]
+          screenshots.push({
+            id: asset.id,
+            uri: asset.uri,
+            width: asset.width,
+            height: asset.height,
+            creationTime: asset.creationTime,
+            size: sizes[j] ?? 0,
+            filename: asset.filename ?? 'unknown.jpg',
+            tags: cached[asset.id] ?? [],
+          })
+        }
+      }
 
       // In dev, when gallery is empty (e.g. emulator), show demo assets so you can test the UI and flows
       const useDemoAssets = __DEV__ && screenshots.length === 0

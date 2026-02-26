@@ -140,9 +140,11 @@ export default function LibraryScreen() {
         )}
         <View style={styles.sizeBadge}>
           <Text style={styles.sizeText}>
-            {item.size > 1024 * 1024 
-              ? `${(item.size / 1024 / 1024).toFixed(1)}MB`
-              : `${Math.round(item.size / 1024)}KB`}
+            {item.size > 0
+              ? item.size > 1024 * 1024
+                ? `${(item.size / 1024 / 1024).toFixed(1)}MB`
+                : `${Math.round(item.size / 1024)}KB`
+              : '—'}
           </Text>
         </View>
       </Pressable>

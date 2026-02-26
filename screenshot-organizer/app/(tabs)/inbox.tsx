@@ -385,7 +385,11 @@ export default function InboxScreen() {
                 <View style={styles.metaBadge}>
                   <Ionicons name="server-outline" size={14} color={colors.primary} />
                   <Text style={styles.metaText}>
-                    {(currentAsset.size / 1024 / 1024).toFixed(1)} MB
+                    {currentAsset.size > 0
+                      ? currentAsset.size >= 1024 * 1024
+                        ? `${(currentAsset.size / 1024 / 1024).toFixed(1)} MB`
+                        : `${Math.round(currentAsset.size / 1024)} KB`
+                      : '—'}
                   </Text>
                 </View>
                 <View style={styles.metaBadge}>
