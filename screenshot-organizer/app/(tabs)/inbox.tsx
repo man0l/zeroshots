@@ -2,6 +2,7 @@ import React, { useCallback } from 'react'
 import { View, Text, StyleSheet, Dimensions, Pressable, Platform, Linking } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { GestureDetector, Gesture } from 'react-native-gesture-handler'
 import Animated, { 
   useSharedValue, 
@@ -28,6 +29,7 @@ export default function InboxScreen() {
     return `exp://${window.location.host}`
   }, [isWebPreview])
   const router = useRouter()
+  const insets = useSafeAreaInsets()
   const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots } = useGallery()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
@@ -241,9 +243,10 @@ export default function InboxScreen() {
   const createdAt = Number(currentAsset.creationTime || Date.now())
   const daysOld = Math.max(0, Math.floor((Date.now() - createdAt) / (1000 * 60 * 60 * 24)))
   const trustPercent = entitlement === 'free' ? (deletesRemaining / 15) * 100 : 100
+  const contentBottomPadding = insets.bottom + 72
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingBottom: contentBottomPadding }]}>
       {/* Ambient top glow */}
       <View style={styles.ambientGlow} />
 

@@ -15,8 +15,8 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
   { id: '6', uri: 'https://picsum.photos/seed/ss6/400/600', width: 1170, height: 2532, creationTime: Date.now() - 3 * 86400000, size: 0.45 * 1024 * 1024, filename: 'screenshot_6.png', tags: ['code'] },
 ]
 const MAX_ASSETS_TO_LOAD = 300
+// AI classification cap per load to avoid heavy processing; applies to all plans.
 const MAX_ASSETS_TO_CLASSIFY = 40
-const FREEMIUM_AI_LIMIT = 15 // Matches freemium delete quota
 
 export function useGallery() {
   const isWeb = Platform.OS === 'web'
@@ -93,13 +93,10 @@ export function useGallery() {
 
       setAssets(assetsToSet)
 
-      // Only classify real assets that have no cached tags — respect AI setting and freemium quota (skip for demo)
+      // Only classify real assets that have no cached tags — respect AI setting (skip for demo)
       if (!useDemoAssets && screenshots.length > 0) {
         const { aiEnabled } = useSettingsStore.getState()
-        const { entitlement } = useEntitlementStore.getState()
-        const limit = aiEnabled && entitlement === 'free'
-          ? FREEMIUM_AI_LIMIT
-          : MAX_ASSETS_TO_CLASSIFY
+        const limit = aiEnabled ? MAX_ASSETS_TO_CLASSIFY : 0
         const toClassify = screenshots.filter(a => !cached[a.id]?.length).slice(0, limit)
         if (toClassify.length > 0) {
           classifyScreenshots(toClassify)
