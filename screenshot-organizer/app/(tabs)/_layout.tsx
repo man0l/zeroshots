@@ -1,10 +1,19 @@
 import { Tabs } from 'expo-router'
 import { Platform, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../../src/lib/theme'
 import { BlurView } from 'expo-blur'
 
+const TAB_BAR_BASE_HEIGHT = 72
+const TAB_BAR_PADDING_TOP = 8
+const TAB_BAR_PADDING_BOTTOM = 10
+
 export default function TabLayout() {
+  const insets = useSafeAreaInsets()
+  const paddingBottom = TAB_BAR_PADDING_BOTTOM + insets.bottom
+  const height = TAB_BAR_BASE_HEIGHT + insets.bottom
+
   return (
     <Tabs
       screenOptions={{
@@ -14,9 +23,9 @@ export default function TabLayout() {
           backgroundColor: Platform.OS === 'web' ? colors.surface : 'rgba(30, 41, 59, 0.4)',
           borderTopWidth: 1,
           borderTopColor: 'rgba(255, 255, 255, 0.1)',
-          paddingBottom: 10,
-          paddingTop: 8,
-          height: 72,
+          paddingBottom,
+          paddingTop: TAB_BAR_PADDING_TOP,
+          height,
         },
         tabBarBackground: () =>
           Platform.OS !== 'ios'

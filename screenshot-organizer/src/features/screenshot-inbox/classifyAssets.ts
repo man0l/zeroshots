@@ -35,6 +35,7 @@ async function getOnDeviceLabels(uri: string): Promise<string[]> {
 }
 
 // Android: ML Kit image labeling. Returns [] if package unavailable (e.g. Expo Go).
+// Native module expects file:// URIs for local paths (Uri.parse + InputImage.fromFilePath).
 async function getOnDeviceLabelsAndroid(uri: string): Promise<string[]> {
   let tempPath: string | null = null
   try {
@@ -46,16 +47,30 @@ async function getOnDeviceLabelsAndroid(uri: string): Promise<string[]> {
       await FileSystem.copyAsync({ from: uri, to: tempPath })
       imageUri = tempPath
     }
+    // ML Kit Android expects a proper file URI for local paths (scheme file://).
+    if (imageUri.startsWith('/') && !imageUri.startsWith('file://')) {
+      imageUri = `file://${imageUri}`
+    }
+    if (__DEV__) {
+      console.log('[ML Kit] label() called with URI:', imageUri.replace(/^file:\/\/[^/]+/, 'file://…'))
+    }
     const ImageLabeling = require('@react-native-ml-kit/image-labeling').default
     const result = await ImageLabeling.label(imageUri)
+    if (__DEV__) {
+      console.log('[ML Kit] raw result:', Array.isArray(result) ? `array[${result.length}]` : typeof result, result)
+    }
     if (Array.isArray(result)) {
-      return result.map((r: { text?: string; label?: string }) => r?.text ?? r?.label ?? String(r))
+      const labels = result.map((r: { text?: string; label?: string }) => r?.text ?? r?.label ?? String(r)).filter(Boolean)
+      if (__DEV__ && labels.length > 0) console.log('[ML Kit] labels:', labels)
+      return labels
     }
     if (result?.labels) {
-      return result.labels.map((l: { text?: string; label?: string }) => l?.text ?? l?.label ?? '')
+      return result.labels.map((l: { text?: string; label?: string }) => l?.text ?? l?.label ?? '').filter(Boolean)
     }
+    if (__DEV__) console.log('[ML Kit] no labels (unexpected result shape)')
     return []
-  } catch {
+  } catch (e) {
+    if (__DEV__) console.warn('[ML Kit] label() failed:', e)
     return []
   } finally {
     if (tempPath) {
