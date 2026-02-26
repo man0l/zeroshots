@@ -13,6 +13,7 @@ import Animated, {
 import * as Haptics from 'expo-haptics'
 import { useGallery } from '../../src/hooks/useGallery'
 import { useSessionStore } from '../../src/state/session.store'
+import { useKeptIdsStore } from '../../src/state/keptIds.store'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
 import { useSettingsStore } from '../../src/state/settings.store'
 import { events } from '../../src/features/analytics/events'
@@ -53,16 +54,38 @@ export default function InboxScreen() {
   const translateX = useSharedValue(0)
   const scale = useSharedValue(1)
 
-  // Start or restart session when the gallery asset set changes (e.g. after adding a screenshot or pull-to-refresh)
+  const keptIds = useKeptIdsStore((s) => s.ids)
+  const [keptIdsHydrated, setKeptIdsHydrated] = React.useState(false)
   React.useEffect(() => {
-    if (assets.length === 0) return
-    const ids = assets.map((a) => a.id).sort().join(',')
+    const check = () => setKeptIdsHydrated(true)
+    if (useKeptIdsStore.persist.hasHydrated()) check()
+    return useKeptIdsStore.persist.onFinishHydration(check)
+  }, [])
+  // Start or restart session when the gallery asset set changes (e.g. after adding a screenshot or pull-to-refresh)
+  // Exclude assets the user has already kept — they're done with triage
+  const toTriage = React.useMemo(() => {
+    const keptSet = new Set(keptIds)
+    return assets.filter((a) => !keptSet.has(a.id))
+  }, [assets, keptIds])
+
+  React.useEffect(() => {
+    if (!keptIdsHydrated) return
+    if (toTriage.length === 0) {
+      if (assets.length > 0) {
+        // All assets have been kept — nothing left to triage
+        endSession()
+      }
+      return
+    }
+    // Don't restart mid-session (e.g. when user keeps — we just advance, not rebuild)
+    if (isRunning) return
+    const ids = toTriage.map((a) => a.id).sort().join(',')
     if (ids !== sessionAssetIdsRef.current) {
       sessionAssetIdsRef.current = ids
-      startSession(assets)
-      events.sessionStarted(assets.length)
+      startSession(toTriage)
+      events.sessionStarted(toTriage.length)
     }
-  }, [assets, startSession])
+  }, [toTriage, assets.length, startSession, endSession, isRunning, keptIdsHydrated])
 
   const handleRefresh = useCallback(async () => {
     endSession()
@@ -111,6 +134,7 @@ export default function InboxScreen() {
       }
     } else if (action === 'keep') {
       events.assetKept(asset.id)
+      useKeptIdsStore.getState().addKept(asset.id)
     } else if (action === 'archive') {
       events.assetArchived(asset.id)
     }
