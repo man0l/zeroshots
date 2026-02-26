@@ -32,7 +32,7 @@ export default function InboxScreen() {
   }, [isWebPreview])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots } = useGallery()
+  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, deleteAsset } = useGallery()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
   const sessionAssetIdsRef = React.useRef('')
@@ -70,10 +70,12 @@ export default function InboxScreen() {
   const handleAction = useCallback(async (action: 'keep' | 'delete' | 'archive') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
 
+    const state = useSessionStore.getState()
+    const asset = state.queue[state.currentIndex]
+    if (!asset) return
+
     // On-demand classification: if this asset is effectively untagged, run one-off tagging before we act.
     if (aiEnabled) {
-      const state = useSessionStore.getState()
-      const asset = state.queue[state.currentIndex]
       if (asset && (!asset.tags || asset.tags.length === 0)) {
         try {
           const [classified] = await classifyAssets([asset])
@@ -97,6 +99,11 @@ export default function InboxScreen() {
     
     if (action === 'delete') {
       useEntitlementStore.getState().decrementDeletes()
+      try {
+        await deleteAsset(asset.id)
+      } catch (e) {
+        console.error('Failed to delete asset from library:', e)
+      }
     }
 
     translateX.value = withSpring(
@@ -108,7 +115,7 @@ export default function InboxScreen() {
       nextAsset()
       translateX.value = 0
     }, 200)
-  }, [aiEnabled, entitlement, deletesRemaining])
+  }, [aiEnabled, entitlement, deletesRemaining, deleteAsset])
 
   const handleSwipeLeft = useCallback(() => { void handleAction('delete') }, [handleAction])
   const handleSwipeRight = useCallback(() => { void handleAction('keep') }, [handleAction])
