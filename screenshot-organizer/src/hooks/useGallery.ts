@@ -15,7 +15,7 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
   { id: '5', uri: 'https://picsum.photos/seed/ss5/400/600', width: 1080, height: 1920, creationTime: Date.now() - 90 * 86400000, size: 5.1 * 1024 * 1024, filename: 'screenshot_5.png', tags: ['article'] },
   { id: '6', uri: 'https://picsum.photos/seed/ss6/400/600', width: 1170, height: 2532, creationTime: Date.now() - 3 * 86400000, size: 0.45 * 1024 * 1024, filename: 'screenshot_6.png', tags: ['code'] },
 ]
-const INITIAL_BATCH_SIZE = 80
+const INITIAL_BATCH_SIZE = 150
 const PAGE_SIZE = 50
 // AI classification cap per load to avoid heavy processing; applies to all plans.
 const MAX_ASSETS_TO_CLASSIFY = 40
@@ -103,17 +103,6 @@ export function useGallery() {
     }
   }, [isWeb, permissionStatus?.granted, permissionStatus])
 
-  // Reload gallery when app comes back to foreground (e.g. after taking a new screenshot)
-  useEffect(() => {
-    if (Platform.OS === 'web' || !permissionStatus?.granted) return
-    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
-      if (nextState === 'active') {
-        loadScreenshots()
-      }
-    })
-    return () => subscription.remove()
-  }, [permissionStatus?.granted])
-
   const classifyScreenshots = useCallback(async (screenshots: ClassifiedAsset[]) => {
     const runId = ++classificationRunIdRef.current
     try {
@@ -142,6 +131,51 @@ export function useGallery() {
       }
     }
   }, [])
+
+  // On app resume: refresh first batch and merge with existing paginated assets.
+  // Avoids truncating to 80 when user had loaded more via infinite scroll.
+  const refreshFirstBatchPreservingPagination = useCallback(async () => {
+    if (Platform.OS === 'web') return
+    try {
+      const media = await MediaLibrary.getAssetsAsync({
+        mediaType: 'photo',
+        sortBy: ['creationTime'],
+        first: INITIAL_BATCH_SIZE,
+      })
+      endCursorRef.current = media.endCursor ?? null
+      setHasNextPage(media.hasNextPage ?? false)
+      if (media.assets.length === 0) return
+
+      const ids = media.assets.map((a) => a.id)
+      const cached = await getCachedTags(ids)
+      const firstBatchScreenshots = await processAssetsToScreenshots(media.assets, cached)
+      const firstBatchIds = new Set(firstBatchScreenshots.map((a) => a.id))
+
+      setAssets((prev) => {
+        const preserved = prev.filter((a) => !firstBatchIds.has(a.id))
+        return [...firstBatchScreenshots, ...preserved]
+      })
+
+      const { aiEnabled } = useSettingsStore.getState()
+      const limit = aiEnabled ? MAX_ASSETS_TO_CLASSIFY : 0
+      const toClassify = firstBatchScreenshots.filter((a) => !cached[a.id]?.length).slice(0, limit)
+      if (toClassify.length > 0) {
+        classifyScreenshots(toClassify)
+      }
+    } catch (err) {
+      if (__DEV__) console.warn('[useGallery] refreshFirstBatchPreservingPagination failed:', err)
+    }
+  }, [classifyScreenshots])
+
+  useEffect(() => {
+    if (Platform.OS === 'web' || !permissionStatus?.granted) return
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        refreshFirstBatchPreservingPagination()
+      }
+    })
+    return () => subscription.remove()
+  }, [permissionStatus?.granted, refreshFirstBatchPreservingPagination])
 
   const loadScreenshots = useCallback(async () => {
     try {

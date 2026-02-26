@@ -87,8 +87,8 @@ export default function InboxScreen() {
       return
     }
     if (isRunning && toTriage.length > 0) {
-      // Sync persisted queue with current assets (filter out deleted, use fresh data)
-      reconcileQueue(toTriage)
+      const keptSet = new Set(keptIds)
+      reconcileQueue(toTriage, keptSet)
       return
     }
     const ids = toTriage.map((a) => a.id).sort().join(',')
@@ -97,7 +97,7 @@ export default function InboxScreen() {
       startSession(toTriage)
       events.sessionStarted(toTriage.length)
     }
-  }, [toTriage, assets.length, startSession, endSession, reconcileQueue, isRunning, keptIdsHydrated, sessionHydrated])
+  }, [toTriage, assets.length, keptIds, startSession, endSession, reconcileQueue, isRunning, keptIdsHydrated, sessionHydrated])
 
   // Load more assets when user nears end of queue (limitless scrolling)
   const LOAD_MORE_THRESHOLD = 10

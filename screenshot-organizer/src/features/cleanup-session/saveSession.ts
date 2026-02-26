@@ -40,10 +40,10 @@ export async function saveSessionToSupabase(userId: string) {
 
   if (sessionError) throw sessionError
 
-  // 2. Create cleanup actions records
+  // 2. Create cleanup actions records (platform_asset_id = device MediaLibrary ID)
   const actions = state.actions.map(action => ({
     session_id: sessionRecord.id,
-    asset_id: action.assetId,
+    platform_asset_id: action.assetId,
     action: action.action,
     action_at: new Date(action.timestamp).toISOString(),
   }))

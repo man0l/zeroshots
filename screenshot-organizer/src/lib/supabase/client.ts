@@ -168,21 +168,24 @@ export interface Database {
         Row: {
           id: string
           session_id: string
-          asset_id: string
+          asset_id: string | null
+          platform_asset_id: string | null
           action: 'keep' | 'delete' | 'archive' | 'undo'
           action_at: string
         }
         Insert: {
           id?: string
           session_id: string
-          asset_id: string
+          asset_id?: string | null
+          platform_asset_id?: string | null
           action: 'keep' | 'delete' | 'archive' | 'undo'
           action_at?: string
         }
         Update: {
           id?: string
           session_id?: string
-          asset_id?: string
+          asset_id?: string | null
+          platform_asset_id?: string | null
           action?: 'keep' | 'delete' | 'archive' | 'undo'
           action_at?: string
         }

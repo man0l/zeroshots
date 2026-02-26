@@ -34,8 +34,8 @@ interface SessionState {
   
   startSession: (assets: QueuedAsset[]) => void
   appendToQueue: (assets: QueuedAsset[]) => void
-  /** Filter queue to assets that still exist in toTriage; use fresh asset data. Adjust currentIndex if out of bounds. */
-  reconcileQueue: (toTriage: QueuedAsset[]) => void
+  /** Filter queue: remove kept/deleted items, use fresh data from toTriage. Preserve items not in toTriage (pagination overflow). */
+  reconcileQueue: (toTriage: QueuedAsset[], keptIds: Set<string>) => void
   endSession: () => {
     deletedCount: number
     archivedCount: number
@@ -86,15 +86,16 @@ export const useSessionStore = create<SessionState>()(
     set({ queue: [...state.queue, ...toAppend] })
   },
 
-  reconcileQueue: (toTriage) => {
+  reconcileQueue: (toTriage, keptIds) => {
     const state = get()
     const triageMap = new Map(toTriage.map((a) => [a.id, a]))
+    const deletedIds = new Set(state.actions.filter((a) => a.action === 'delete').map((a) => a.assetId))
     const filtered = state.queue
-      .map((q) => triageMap.get(q.id))
-      .filter((a): a is QueuedAsset => a != null)
+      .filter((q) => !keptIds.has(q.id) && !deletedIds.has(q.id))
+      .map((q) => triageMap.get(q.id) ?? q)
     const currentAsset = state.queue[state.currentIndex]
     const newIndex =
-      currentAsset && triageMap.has(currentAsset.id)
+      currentAsset && !keptIds.has(currentAsset.id) && !deletedIds.has(currentAsset.id)
         ? filtered.findIndex((a) => a.id === currentAsset.id)
         : 0
     const clampedIndex = Math.max(0, Math.min(newIndex >= 0 ? newIndex : 0, filtered.length - 1))
