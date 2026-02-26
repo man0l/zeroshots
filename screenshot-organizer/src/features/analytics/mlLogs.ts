@@ -25,9 +25,12 @@ export async function logMlClassification(log: MlClassificationLog): Promise<voi
   }
 
   const timestamp = log.createdAt ?? new Date().toISOString()
+  const { data: { session } } = await supabase.auth.getSession()
+  const userId = session?.user?.id ?? null
   const payload = {
     events: [
       {
+        user_id: userId,
         name: 'ml_classification',
         properties: {
           source: log.source,
