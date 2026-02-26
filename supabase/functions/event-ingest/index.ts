@@ -35,7 +35,7 @@ serve(async (req) => {
 
     const formattedEvents = events.map((event: any) => ({
       user_id: event.user_id || null,
-      event_name: event.name,
+      event_name: event.event_name ?? event.name,
       properties: event.properties || {},
       created_at: event.timestamp || new Date().toISOString(),
     }))
@@ -65,10 +65,11 @@ serve(async (req) => {
         status: 200,
       }
     )
-  } catch (error) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error)
     console.error('Error ingesting events:', error)
     return new Response(
-      JSON.stringify({ error: error?.message ?? String(error) }),
+      JSON.stringify({ error: msg || 'Unknown error' }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: 400,
