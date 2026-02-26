@@ -19,7 +19,8 @@ export async function saveSessionToSupabase(userId: string) {
     .map(a => state.queue.find(q => q.id === a.assetId))
     .filter(Boolean)
   
-  const savedBytes = deletedAssets.reduce((sum, a) => sum + (a?.size || 0), 0)
+  // DB expects bigint; ensure integer (reduce can yield float from asset sizes)
+  const savedBytes = Math.round(deletedAssets.reduce((sum, a) => sum + (a?.size || 0), 0))
 
   // 1. Create cleanup session record
   const { data: sessionRecord, error: sessionError } = await supabase

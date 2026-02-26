@@ -28,9 +28,10 @@ export default function InboxScreen() {
     return `exp://${window.location.host}`
   }, [isWebPreview])
   const router = useRouter()
-  const { assets, isLoading, permissionStatus, requestPermission } = useGallery()
+  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots } = useGallery()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
+  const sessionAssetIdsRef = React.useRef('')
   const { 
     queue, 
     currentIndex, 
@@ -46,11 +47,20 @@ export default function InboxScreen() {
   const translateX = useSharedValue(0)
   const scale = useSharedValue(1)
 
+  // Start or restart session when the gallery asset set changes (e.g. after adding a screenshot or pull-to-refresh)
   React.useEffect(() => {
-    if (assets.length > 0 && !isRunning) {
+    if (assets.length === 0) return
+    const ids = assets.map((a) => a.id).sort().join(',')
+    if (ids !== sessionAssetIdsRef.current) {
+      sessionAssetIdsRef.current = ids
       startSession(assets)
     }
-  }, [assets.length])
+  }, [assets, startSession])
+
+  const handleRefresh = useCallback(async () => {
+    endSession()
+    await loadScreenshots()
+  }, [endSession, loadScreenshots])
 
   const handleAction = useCallback((action: 'keep' | 'delete' | 'archive') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
@@ -254,12 +264,24 @@ export default function InboxScreen() {
             </View>
           </View>
         </View>
-        <Pressable 
-          style={styles.gridButton}
-          onPress={() => router.push('/library')}
-        >
-          <Ionicons name="grid-outline" size={24} color={colors.textMuted} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          {!isWebPreview && (
+            <Pressable
+              style={styles.gridButton}
+              onPress={handleRefresh}
+              accessibilityRole="button"
+              accessibilityLabel="Refresh gallery"
+            >
+              <Ionicons name="refresh" size={24} color={colors.textMuted} />
+            </Pressable>
+          )}
+          <Pressable 
+            style={styles.gridButton}
+            onPress={() => router.push('/library')}
+          >
+            <Ionicons name="grid-outline" size={24} color={colors.textMuted} />
+          </Pressable>
+        </View>
       </View>
 
       <View style={styles.cardContainer}>
@@ -419,6 +441,11 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.8,
     shadowRadius: 10,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
   },
   gridButton: {
     width: 48,

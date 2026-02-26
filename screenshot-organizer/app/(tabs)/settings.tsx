@@ -1,17 +1,53 @@
-import React from 'react'
-import { View, Text, StyleSheet, Pressable, Switch } from 'react-native'
+import React, { useState } from 'react'
+import { View, Text, StyleSheet, Pressable, Switch, Alert, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import * as FileSystem from 'expo-file-system/legacy'
 import { colors, spacing, radii } from '../../src/lib/theme'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
 import { useSettingsStore } from '../../src/state/settings.store'
+import { testOnDeviceLabeling } from '../../src/features/screenshot-inbox/classifyAssets'
+
+const TEST_IMAGE_URL = 'https://picsum.photos/seed/mlkit/400/300'
 
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { entitlement, deletesRemaining, setEntitlement } = useEntitlementStore()
-  const { aiEnabled, setAiEnabled } = useSettingsStore()
+  const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled } = useSettingsStore()
+  const [mlKitTestStatus, setMlKitTestStatus] = useState<string | null>(null)
+
+  const runTestMlKit = async () => {
+    setMlKitTestStatus('…')
+    try {
+      const cacheDir = FileSystem.cacheDirectory
+      if (!cacheDir) {
+        Alert.alert('ML Kit test', 'No cache directory')
+        setMlKitTestStatus('No cache')
+        return
+      }
+      const localPath = `${cacheDir}mlkit_test_${Date.now()}.jpg`
+      await FileSystem.downloadAsync(TEST_IMAGE_URL, localPath)
+      const uri = localPath.startsWith('file://') ? localPath : `file://${localPath}`
+      const { rawLabels, tags } = await testOnDeviceLabeling(uri)
+      await FileSystem.deleteAsync(localPath, { idempotent: true })
+      const raw = rawLabels.length ? rawLabels.join(', ') : '(none)'
+      const tagStr = tags.join(', ')
+      Alert.alert(
+        'ML Kit test',
+        `Raw labels: ${raw}\n\nMapped tags: ${tagStr}\n\nCheck Metro/logcat for [ML Kit] logs.`
+      )
+      setMlKitTestStatus(rawLabels.length > 0 ? 'OK' : '0 labels')
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e)
+      console.warn('[Test ML Kit]', e)
+      Alert.alert('ML Kit test failed', msg)
+      setMlKitTestStatus('Err')
+    } finally {
+      setTimeout(() => setMlKitTestStatus(null), 3000)
+    }
+  }
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
@@ -71,13 +107,28 @@ export default function SettingsScreen() {
               <Text style={styles.label}>AI Smart Scan</Text>
               <Text style={styles.aiSubLabel}>
                 {aiEnabled
-                  ? `Photos classified by Google Gemini${entitlement === 'free' ? ' (first 15 per session)' : ''}`
-                  : 'On-device only — no photos leave your device'}
+                  ? 'On-device classification is enabled for new photos.'
+                  : 'On-device only — no photos are classified automatically.'}
               </Text>
             </View>
             <Switch
               value={aiEnabled}
               onValueChange={setAiEnabled}
+              trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
+              thumbColor="#FFFFFF"
+              ios_backgroundColor={colors.surfaceHighlight}
+            />
+          </View>
+          <View style={styles.row}>
+            <View style={styles.aiLabelGroup}>
+              <Text style={styles.label}>Store ML logs</Text>
+              <Text style={styles.aiSubLabel}>
+                Save anonymized label + tag summaries to Supabase to debug and improve classification. No images are uploaded.
+              </Text>
+            </View>
+            <Switch
+              value={mlLogsEnabled}
+              onValueChange={setMlLogsEnabled}
               trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
               thumbColor="#FFFFFF"
               ios_backgroundColor={colors.surfaceHighlight}
@@ -114,6 +165,19 @@ export default function SettingsScreen() {
           >
             <Text style={styles.label}>Set Lifetime</Text>
           </Pressable>
+          {__DEV__ && Platform.OS !== 'web' && (
+            <Pressable
+              style={styles.row}
+              onPress={runTestMlKit}
+              accessibilityRole="button"
+              accessibilityLabel="Test ML Kit with downloaded image"
+            >
+              <Text style={styles.label}>Test ML Kit</Text>
+              {mlKitTestStatus != null && (
+                <Text style={styles.mlKitStatus}>{mlKitTestStatus}</Text>
+              )}
+            </Pressable>
+          )}
         </View>
       </View>
     </View>
@@ -212,6 +276,10 @@ const styles = StyleSheet.create({
   },
   privacyLinkText: {
     flex: 1,
+    fontSize: 14,
+    color: colors.textMuted,
+  },
+  mlKitStatus: {
     fontSize: 14,
     color: colors.textMuted,
   },

@@ -3,6 +3,7 @@ import { Platform } from 'react-native'
 import * as FileSystem from 'expo-file-system/legacy'
 import { mapOnDeviceLabelsToTags } from './onDeviceTagMapping'
 import ExpoScreenshotClassify from 'expo-screenshot-classify'
+import { logMlClassification } from '../analytics/mlLogs'
 
 export interface ClassifiedAsset {
   id: string
@@ -83,6 +84,24 @@ async function getOnDeviceLabelsAndroid(uri: string): Promise<string[]> {
   }
 }
 
+/**
+ * Dev-only: run on-device labeling on a single image URI and return raw labels + mapped tags.
+ * Use from Settings "Test ML Kit" to verify ML Kit without the gallery (e.g. in emulator).
+ */
+export async function testOnDeviceLabeling(uri: string): Promise<{ rawLabels: string[]; tags: string[] }> {
+  const rawLabels = await getOnDeviceLabels(uri)
+  const tags = mapOnDeviceLabelsToTags(rawLabels, 'test.jpg')
+  // Log test classification as well (helps debug ML behavior when user opts in).
+  const source = Platform.OS === 'ios' ? 'ios_vision' : Platform.OS === 'android' ? 'android_mlkit' : 'android_mlkit'
+  void logMlClassification({
+    source,
+    rawLabels,
+    tags,
+    filename: 'mlkit_test.jpg',
+  })
+  return { rawLabels, tags }
+}
+
 // Run async tasks with a concurrency limit; returns results in input order.
 async function runWithConcurrency<T, R>(
   items: T[],
@@ -125,8 +144,24 @@ export async function classifyAssets(
   const classifiedAssets = await runWithConcurrency(assets, CONCURRENCY, async (asset) => {
     try {
       const labels = await getOnDeviceLabels(asset.uri)
-      if (labels.length === 0) return { ...asset, tags: [DEFAULT_TAG] }
+      if (labels.length === 0) {
+        void logMlClassification({
+          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+          rawLabels: [],
+          tags: [DEFAULT_TAG],
+          filename: asset.filename,
+          createdAt: new Date(asset.creationTime).toISOString(),
+        })
+        return { ...asset, tags: [DEFAULT_TAG] }
+      }
       const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
+      void logMlClassification({
+        source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+        rawLabels: labels,
+        tags,
+        filename: asset.filename,
+        createdAt: new Date(asset.creationTime).toISOString(),
+      })
       return { ...asset, tags }
     } catch {
       return { ...asset, tags: [DEFAULT_TAG] }
@@ -166,9 +201,26 @@ export async function classifyAssetsBatch(
     try {
       const labels = await getOnDeviceLabels(asset.uri)
       if (labels.length === 0) {
-        results.push({ ...asset, tags: [DEFAULT_TAG] })
+        const classified = { ...asset, tags: [DEFAULT_TAG] }
+        results.push(classified)
+        void logMlClassification({
+          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+          rawLabels: [],
+          tags: classified.tags ?? [],
+          filename: classified.filename,
+          createdAt: new Date(classified.creationTime).toISOString(),
+        })
       } else {
-        results.push({ ...asset, tags: mapOnDeviceLabelsToTags(labels, asset.filename) })
+        const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
+        const classified = { ...asset, tags }
+        results.push(classified)
+        void logMlClassification({
+          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+          rawLabels: labels,
+          tags,
+          filename: classified.filename,
+          createdAt: new Date(classified.creationTime).toISOString(),
+        })
       }
     } catch {
       results.push({ ...asset, tags: [DEFAULT_TAG] })

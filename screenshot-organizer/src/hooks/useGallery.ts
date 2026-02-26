@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Platform } from 'react-native'
+import { Platform, AppState, type AppStateStatus } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
 import { getCachedTags, setCachedTags } from '../features/screenshot-inbox/classificationCache'
@@ -37,8 +37,25 @@ export function useGallery() {
     }
     if (permissionStatus?.granted) {
       loadScreenshots()
+      return
     }
-  }, [isWeb, permissionStatus?.granted])
+    // In dev (e.g. emulator), show demo assets when gallery permission isn't granted so you can still test the UI
+    if (__DEV__ && permissionStatus != null) {
+      setAssets(MOCK_ASSETS.map((a, i) => ({ ...a, id: `demo-${i}` })))
+      setIsLoading(false)
+    }
+  }, [isWeb, permissionStatus?.granted, permissionStatus])
+
+  // Reload gallery when app comes back to foreground (e.g. after taking a new screenshot)
+  useEffect(() => {
+    if (Platform.OS === 'web' || !permissionStatus?.granted) return
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'active') {
+        loadScreenshots()
+      }
+    })
+    return () => subscription.remove()
+  }, [permissionStatus?.granted])
 
   const loadScreenshots = async () => {
     try {
@@ -68,10 +85,16 @@ export function useGallery() {
           tags: cached[asset.id] ?? ['screenshot'],
         }))
 
-      setAssets(screenshots)
+      // In dev, when gallery is empty (e.g. emulator), show demo assets so you can test the UI and flows
+      const useDemoAssets = __DEV__ && screenshots.length === 0
+      const assetsToSet = useDemoAssets
+        ? MOCK_ASSETS.map((a, i) => ({ ...a, id: `demo-${i}` }))
+        : screenshots
 
-      // Only classify assets that have no cached tags — respect AI setting and freemium quota
-      if (screenshots.length > 0) {
+      setAssets(assetsToSet)
+
+      // Only classify real assets that have no cached tags — respect AI setting and freemium quota (skip for demo)
+      if (!useDemoAssets && screenshots.length > 0) {
         const { aiEnabled } = useSettingsStore.getState()
         const { entitlement } = useEntitlementStore.getState()
         const limit = aiEnabled && entitlement === 'free'
@@ -119,6 +142,10 @@ export function useGallery() {
   }, [])
 
   const deleteAsset = async (assetId: string) => {
+    if (assetId.startsWith('demo-')) {
+      setAssets(prev => prev.filter(a => a.id !== assetId))
+      return
+    }
     try {
       await MediaLibrary.deleteAssetsAsync([assetId])
       setAssets(prev => prev.filter(a => a.id !== assetId))
@@ -129,9 +156,15 @@ export function useGallery() {
   }
 
   const deleteAssets = async (assetIds: string[]) => {
+    const realIds = assetIds.filter(id => !id.startsWith('demo-'))
+    const demoIds = assetIds.filter(id => id.startsWith('demo-'))
+    if (demoIds.length > 0) {
+      setAssets(prev => prev.filter(a => !demoIds.includes(a.id)))
+    }
+    if (realIds.length === 0) return
     try {
-      await MediaLibrary.deleteAssetsAsync(assetIds)
-      setAssets(prev => prev.filter(a => !assetIds.includes(a.id)))
+      await MediaLibrary.deleteAssetsAsync(realIds)
+      setAssets(prev => prev.filter(a => !realIds.includes(a.id)))
     } catch (err) {
       setError(err instanceof Error ? err : new Error('Failed to delete assets'))
       throw err
