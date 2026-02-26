@@ -40,7 +40,7 @@ serve(async (req) => {
       created_at: event.timestamp || new Date().toISOString(),
     }))
 
-    const res = await fetch(`${restUrl}/${SCHEMA}/analytics_events`, {
+    const res = await fetch(`${restUrl}/analytics_events`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
