@@ -74,7 +74,7 @@ export default function InboxScreen() {
     if (aiEnabled) {
       const state = useSessionStore.getState()
       const asset = state.queue[state.currentIndex]
-      if (asset && (!asset.tags || asset.tags.length === 0 || (asset.tags.length === 1 && asset.tags[0] === 'screenshot'))) {
+      if (asset && (!asset.tags || asset.tags.length === 0)) {
         try {
           const [classified] = await classifyAssets([asset])
           if (classified?.tags?.length) {

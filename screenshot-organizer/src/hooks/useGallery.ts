@@ -82,7 +82,8 @@ export function useGallery() {
           creationTime: asset.creationTime,
           size: 0,
           filename: asset.filename ?? 'unknown.jpg',
-          tags: cached[asset.id] ?? ['screenshot'],
+          // No default tag; empty until classified or read from cache.
+          tags: cached[asset.id] ?? [],
         }))
 
       // In dev, when gallery is empty (e.g. emulator), show demo assets so you can test the UI and flows
@@ -187,8 +188,8 @@ export function useGallery() {
   const classifyNextBatch = useCallback(async () => {
     const { aiEnabled } = useSettingsStore.getState()
     if (!aiEnabled || assets.length === 0) return
-    // Consider assets that are effectively untagged / default-tagged.
-    const candidates = assets.filter(a => !a.tags || a.tags.length === 0 || (a.tags.length === 1 && a.tags[0] === 'screenshot'))
+    // Consider assets that are effectively untagged.
+    const candidates = assets.filter(a => !a.tags || a.tags.length === 0)
     if (candidates.length === 0) return
     const toClassify = candidates.slice(0, MAX_ASSETS_TO_CLASSIFY)
     await classifyScreenshots(toClassify)
