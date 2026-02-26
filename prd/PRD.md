@@ -964,6 +964,7 @@ $$ LANGUAGE plpgsql;
 - [x] `usage-enforce` - Trust limit check
 - [x] `event-ingest` - Analytics batch insert
 - [x] `classify-image` - AI image classification
+- [x] `get-tag-suggestions` - Tag suggestions from unmapped ML labels
 - [x] `increment_deletes_used` - Database function
 
 ### Phase 8: AI Classification ✅
@@ -974,6 +975,7 @@ $$ LANGUAGE plpgsql;
 - [x] Tag filters in The Vault - filter by tag buttons
 - [x] Suggested deletes based on tags + age
 - [x] Heuristic fallback when AI fails
+- [x] Tag suggestions from unmapped ML labels - Settings under AI Features
 
 ### Phase 9: Testing ✅
 - [x] TypeScript - no errors

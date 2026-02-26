@@ -151,12 +151,12 @@ Place migration files in `migrations/` directory:
 Place function code in `functions/` directory:
 ```
 functions/
+├── classify-image/
 ├── entitlement-sync/
-│   └── index.ts
-├── usage-enforce/
-│   └── index.ts
-└── event-ingest/
-    └── index.ts
+├── event-ingest/
+├── get-tag-suggestions/
+├── oauth-callback/
+└── usage-enforce/
 ```
 
 Access at: `http://localhost:8000/functions/v1/[function-name]`
