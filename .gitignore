@@ -39,10 +39,6 @@ yarn-error.*
 screenshot-organizer/ios/
 screenshot-organizer/android/
 
-# Playwright test results
-web-demo/test-results/
-web-demo/playwright-report/
-
 # Supabase volumes (local DB data - not for version control)
 supabase/volumes/
 
@@ -54,3 +50,28 @@ supabase/volumes/
 *.pem
 mcp_jobs.sqlite
 .playwright-mcp/
+
+# Android (local SDK path, outputs, Gradle)
+**/local.properties
+**/android/build/
+**/android/app/build/
+*.apk
+*.aab
+.gradle/
+
+# iOS (Pods, build, user state)
+**/Pods/
+**/ios/build/
+*.xcuserstate
+**/DerivedData/
+
+# Playwright (blob report, traces)
+web-demo/blob-report/
+web-demo/playwright-report/
+web-demo/test-results/
+web-demo/trace/
+web-demo/.cache/
+
+# Coverage
+coverage/
+*.lcov

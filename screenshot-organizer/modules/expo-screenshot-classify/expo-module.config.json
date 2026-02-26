@@ -4,12 +4,6 @@
     "modules": ["ScreenshotClassifyModule"]
   },
   "android": {
-    "modules": ["expo.modules.screenshotclassify.ScreenshotClassifyModule"],
-    "publication": {
-      "groupId": "host.exp.exponent",
-      "artifactId": "expo.modules.screenshotclassify",
-      "version": "1.0.0",
-      "repository": "local-maven-repo"
-    }
+    "modules": ["expo.modules.screenshotclassify.ScreenshotClassifyModule"]
   }
 }
