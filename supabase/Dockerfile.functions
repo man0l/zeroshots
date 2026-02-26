@@ -13,3 +13,4 @@ COPY functions/event-ingest     /home/deno/functions/so-event-ingest
 COPY functions/entitlement-sync /home/deno/functions/so-entitlement-sync
 COPY functions/usage-enforce    /home/deno/functions/so-usage-enforce
 COPY functions/oauth-callback   /home/deno/functions/so-oauth-callback
+COPY functions/get-tag-suggestions /home/deno/functions/so-get-tag-suggestions

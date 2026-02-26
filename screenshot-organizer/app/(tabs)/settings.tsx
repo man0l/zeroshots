@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { View, Text, StyleSheet, Pressable, Switch, Alert, Platform } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -8,6 +8,7 @@ import { colors, spacing, radii } from '../../src/lib/theme'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
 import { useSettingsStore } from '../../src/state/settings.store'
 import { testOnDeviceLabeling } from '../../src/features/screenshot-inbox/classifyAssets'
+import { fetchTagSuggestions, type TagSuggestion } from '../../src/features/analytics/tagSuggestions'
 
 const TEST_IMAGE_URL = 'https://picsum.photos/seed/mlkit/400/300'
 
@@ -17,6 +18,19 @@ export default function SettingsScreen() {
   const { entitlement, deletesRemaining, setEntitlement } = useEntitlementStore()
   const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled } = useSettingsStore()
   const [mlKitTestStatus, setMlKitTestStatus] = useState<string | null>(null)
+  const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[] | null>(null)
+  const [tagSuggestionsLoading, setTagSuggestionsLoading] = useState(false)
+
+  useEffect(() => {
+    if (!mlLogsEnabled) {
+      setTagSuggestions(null)
+      return
+    }
+    setTagSuggestionsLoading(true)
+    fetchTagSuggestions({ limit: 10 })
+      .then(({ data }) => setTagSuggestions(data ?? []))
+      .finally(() => setTagSuggestionsLoading(false))
+  }, [mlLogsEnabled])
 
   const runTestMlKit = async () => {
     setMlKitTestStatus('…')
@@ -134,6 +148,22 @@ export default function SettingsScreen() {
               ios_backgroundColor={colors.surfaceHighlight}
             />
           </View>
+          {mlLogsEnabled && (
+            <View style={styles.suggestedTagsSection}>
+              <Text style={styles.suggestedTagsLabel}>Suggested tags from your usage</Text>
+              {tagSuggestionsLoading ? (
+                <Text style={styles.suggestedTagsMuted}>Loading…</Text>
+              ) : tagSuggestions && tagSuggestions.length > 0 ? (
+                <Text style={styles.suggestedTagsText} selectable>
+                  Consider adding: {tagSuggestions.map(s => `\`${s.rawLabel}\` (${s.count}x)`).join(', ')}
+                </Text>
+              ) : (
+                <Text style={styles.suggestedTagsMuted}>
+                  No unmapped labels yet. Classify more screenshots to see suggestions.
+                </Text>
+              )}
+            </View>
+          )}
           <Pressable
             onPress={() => router.push('/privacy-policy')}
             style={styles.privacyRow}
@@ -265,6 +295,29 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textMuted,
     lineHeight: 17,
+  },
+  suggestedTagsSection: {
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.slateBorder,
+    gap: spacing.xs,
+  },
+  suggestedTagsLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+  },
+  suggestedTagsText: {
+    fontSize: 14,
+    color: colors.textPrimary,
+    lineHeight: 20,
+  },
+  suggestedTagsMuted: {
+    fontSize: 14,
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
   privacyRow: {
     flexDirection: 'row',

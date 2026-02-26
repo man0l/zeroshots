@@ -54,6 +54,41 @@ ORDER BY created_at DESC
 LIMIT 10;
 ```
 
+## Unmapped raw label suggestions (tag suggestions)
+
+Returns raw labels that frequently appear in `ml_classification` events where the only mapped tag is `screenshot`—i.e. labels that did not map to any tag. These are good candidates for new tags or keyword mappings in `LABEL_TO_TAG`.
+
+**Function:** `screenshot_organizer.get_unmapped_raw_label_suggestions(p_min_count, p_limit)`
+
+- `p_min_count` (default 3): Minimum event count to include a label
+- `p_limit` (default 20): Max number of suggestions to return
+- RLS applies: users only see their own data
+
+**Direct SQL (equivalent logic):**
+
+```sql
+SELECT
+  lower(trim(el.val))::TEXT AS raw_label,
+  COUNT(*)::BIGINT AS event_count
+FROM screenshot_organizer.analytics_events e,
+     jsonb_array_elements_text(COALESCE(e.properties->'raw_labels', '[]'::jsonb)) el
+WHERE e.event_name = 'ml_classification'
+  AND jsonb_array_length(COALESCE(e.properties->'raw_labels', '[]'::jsonb)) > 0
+  AND (
+    e.properties->'mapped_tags' = '["screenshot"]'::jsonb
+    OR (jsonb_array_length(COALESCE(e.properties->'mapped_tags', '[]'::jsonb)) = 1
+        AND e.properties->'mapped_tags'->>0 = 'screenshot')
+  )
+GROUP BY lower(trim(el.val))
+HAVING COUNT(*) >= 3
+ORDER BY COUNT(*) DESC
+LIMIT 20;
+```
+
+**Invoke via edge function:** `get-tag-suggestions` (authenticated, uses JWT). Returns `{ suggestions: [{ rawLabel, count }] }`.
+
+**Client:** `fetchTagSuggestions()` in `screenshot-organizer/src/features/analytics/tagSuggestions.ts` calls the edge function. Shown in Settings under AI Features when "Store ML logs" is enabled.
+
 ## Note
 
 - RLS: authenticated users can only `SELECT` their own rows (`user_id = auth.uid()`). Use the service role or a DB user with full access to see all events.
