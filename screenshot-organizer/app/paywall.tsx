@@ -12,7 +12,7 @@ import { useEntitlementStore } from '../src/state/entitlement.store'
 export default function PaywallScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { setEntitlement } = useEntitlementStore()
+  const { setEntitlement, trustLimit } = useEntitlementStore()
 
   const handleUpgrade = () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
@@ -35,33 +35,33 @@ export default function PaywallScreen() {
         <View style={styles.handle} />
 
         <View style={styles.content}>
-          {/* Progress ring with lock icon */}
+          {/* Progress ring with checkmark icon */}
           <View style={styles.iconContainer}>
             {/* Glow behind the ring */}
             <View style={styles.iconGlow} />
-            
+
             {/* Outer ring */}
             <View style={styles.progressRing}>
-              {/* Inner lock circle */}
+              {/* Inner check circle */}
               <View style={styles.lockCircle}>
-                <Ionicons name="lock-closed" size={36} color={colors.primary} />
+                <Ionicons name="checkmark" size={40} color={colors.primary} />
               </View>
             </View>
 
-            {/* "Capacity Full" badge */}
+            {/* "15 / 15" progress pill */}
             <View style={styles.capacityBadge}>
-              <Text style={styles.capacityText}>Capacity Full</Text>
+              <Text style={styles.capacityText}>{trustLimit} / {trustLimit}</Text>
             </View>
           </View>
 
           {/* Title and description */}
           <View style={styles.textContainer}>
             <Text style={styles.title}>
-              Trust Capacity{'\n'}
-              <Text style={styles.titleHighlight}>Reached</Text>
+              You've cleared{'\n'}
+              <Text style={styles.titleHighlight}>{trustLimit} screenshots</Text>
             </Text>
             <Text style={styles.description}>
-              The Trust-First model limits free accounts to 15 deletes per session to prevent accidental data loss.
+              Great session. Upgrade to finish your entire camera roll in one go — no daily limits, ever.
             </Text>
           </View>
 
