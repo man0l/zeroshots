@@ -75,3 +75,4 @@ web-demo/.cache/
 # Coverage
 coverage/
 *.lcov
+.claude/

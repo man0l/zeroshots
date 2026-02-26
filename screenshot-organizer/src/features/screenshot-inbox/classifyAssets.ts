@@ -19,6 +19,10 @@ export interface ClassifiedAsset {
 // Default when no classification is run (AI off, or no local AI result).
 const DEFAULT_TAG = 'screenshot'
 
+// Module-level dedup: tracks asset IDs already logged this app session.
+// Prevents double-logging when multiple useGallery instances classify the same asset concurrently.
+const loggedAssetIds = new Set<string>()
+
 // On-device classification: returns raw labels from native (Vision on iOS, ML Kit on Android) or [] if unavailable.
 async function getOnDeviceLabels(uri: string): Promise<string[]> {
   if (Platform.OS === 'ios' && ExpoScreenshotClassify?.classifyImageAsync) {
@@ -145,23 +149,29 @@ export async function classifyAssets(
     try {
       const labels = await getOnDeviceLabels(asset.uri)
       if (labels.length === 0) {
-        void logMlClassification({
-          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
-          rawLabels: [],
-          tags: [DEFAULT_TAG],
-          filename: asset.filename,
-          createdAt: new Date(asset.creationTime).toISOString(),
-        })
+        if (!loggedAssetIds.has(asset.id)) {
+          loggedAssetIds.add(asset.id)
+          void logMlClassification({
+            source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+            rawLabels: [],
+            tags: [DEFAULT_TAG],
+            filename: asset.filename,
+            createdAt: new Date(asset.creationTime).toISOString(),
+          })
+        }
         return { ...asset, tags: [DEFAULT_TAG] }
       }
       const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
-      void logMlClassification({
-        source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
-        rawLabels: labels,
-        tags,
-        filename: asset.filename,
-        createdAt: new Date(asset.creationTime).toISOString(),
-      })
+      if (!loggedAssetIds.has(asset.id)) {
+        loggedAssetIds.add(asset.id)
+        void logMlClassification({
+          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+          rawLabels: labels,
+          tags,
+          filename: asset.filename,
+          createdAt: new Date(asset.creationTime).toISOString(),
+        })
+      }
       return { ...asset, tags }
     } catch {
       return { ...asset, tags: [DEFAULT_TAG] }
@@ -203,24 +213,30 @@ export async function classifyAssetsBatch(
       if (labels.length === 0) {
         const classified = { ...asset, tags: [DEFAULT_TAG] }
         results.push(classified)
-        void logMlClassification({
-          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
-          rawLabels: [],
-          tags: classified.tags ?? [],
-          filename: classified.filename,
-          createdAt: new Date(classified.creationTime).toISOString(),
-        })
+        if (!loggedAssetIds.has(asset.id)) {
+          loggedAssetIds.add(asset.id)
+          void logMlClassification({
+            source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+            rawLabels: [],
+            tags: classified.tags ?? [],
+            filename: classified.filename,
+            createdAt: new Date(classified.creationTime).toISOString(),
+          })
+        }
       } else {
         const tags = mapOnDeviceLabelsToTags(labels, asset.filename)
         const classified = { ...asset, tags }
         results.push(classified)
-        void logMlClassification({
-          source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
-          rawLabels: labels,
-          tags,
-          filename: classified.filename,
-          createdAt: new Date(classified.creationTime).toISOString(),
-        })
+        if (!loggedAssetIds.has(asset.id)) {
+          loggedAssetIds.add(asset.id)
+          void logMlClassification({
+            source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+            rawLabels: labels,
+            tags,
+            filename: classified.filename,
+            createdAt: new Date(classified.creationTime).toISOString(),
+          })
+        }
       }
     } catch {
       results.push({ ...asset, tags: [DEFAULT_TAG] })

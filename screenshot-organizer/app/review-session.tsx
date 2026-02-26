@@ -1,21 +1,16 @@
-import React, { useState } from 'react'
-import { View, Text, StyleSheet, Pressable, Share, ActivityIndicator, Alert } from 'react-native'
+import React from 'react'
+import { View, Text, StyleSheet, Pressable, Share } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
 import { useRouter } from 'expo-router'
 import { colors, fonts, spacing, radii } from '../src/lib/theme'
 import { useSessionStore } from '../src/state/session.store'
-import { useAuthStore } from '../src/state/auth.store'
-import { saveSessionToSupabase } from '../src/features/cleanup-session/saveSession'
 
 export default function ReviewSessionScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
   const { actions, queue, startTime, resetSession } = useSessionStore()
-  const { user } = useAuthStore()
-  const [isSaving, setIsSaving] = useState(false)
-  const [isSaved, setIsSaved] = useState(false)
 
   const stats = React.useMemo(() => {
     const deletedCount = actions.filter(a => a.action === 'delete').length
@@ -58,62 +53,10 @@ export default function ReviewSessionScreen() {
     }
   }
 
-  const handleFinish = async () => {
-    if (isSaved) {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      resetSession()
-      router.replace('/(tabs)/inbox')
-      return
-    }
-
-    if (!user) {
-      Alert.alert('Error', 'You must be signed in to save sessions')
-      return
-    }
-
-    setIsSaving(true)
-    
-    try {
-      await saveSessionToSupabase(user.id)
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
-      setIsSaved(true)
-      
-      Alert.alert(
-        'Session Saved!',
-        `Your cleanup session has been saved to the cloud.`,
-        [
-          {
-            text: 'Continue',
-            onPress: () => {
-              resetSession()
-              router.replace('/(tabs)/inbox')
-            },
-          },
-        ]
-      )
-    } catch (error) {
-      console.error('Failed to save session:', error)
-      
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error)
-      Alert.alert(
-        'Save Failed',
-        'Failed to save session to the cloud. Your progress is still saved locally. Continue anyway?',
-        [
-          { text: 'Retry', onPress: () => handleFinish() },
-          { 
-            text: 'Continue', 
-            onPress: () => {
-              resetSession()
-              router.replace('/(tabs)/inbox')
-            },
-            style: 'cancel'
-          },
-        ]
-      )
-    } finally {
-      setIsSaving(false)
-    }
+  const handleFinish = () => {
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
+    resetSession()
+    router.replace('/(tabs)/inbox')
   }
 
   const { value: heroValue, unit: heroUnit } = formatBytes(stats.savedBytes)
@@ -177,24 +120,13 @@ export default function ReviewSessionScreen() {
         {/* Actions */}
         <View style={styles.actions}>
           <Pressable
-            style={[styles.finishButton, isSaving && styles.finishButtonSaving]}
+            style={styles.finishButton}
             onPress={handleFinish}
-            disabled={isSaving}
             accessibilityRole="button"
-            accessibilityLabel={isSaved ? 'Session saved' : 'Finish session'}
+            accessibilityLabel="Done"
           >
-            {isSaving ? (
-              <ActivityIndicator color={colors.background} />
-            ) : (
-              <>
-                <Text style={styles.finishButtonText}>
-                  {isSaved ? 'SESSION SAVED' : 'FINISH SESSION'}
-                </Text>
-                {!isSaved && (
-                  <Ionicons name="arrow-forward" size={20} color={colors.background} />
-                )}
-              </>
-            )}
+            <Text style={styles.finishButtonText}>DONE</Text>
+            <Ionicons name="arrow-forward" size={20} color={colors.background} />
           </Pressable>
 
           <Pressable
@@ -375,9 +307,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 1,
     shadowRadius: 0,
     elevation: 10,
-  },
-  finishButtonSaving: {
-    opacity: 0.7,
   },
   finishButtonText: {
     fontSize: 16,

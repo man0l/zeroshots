@@ -121,7 +121,7 @@ supabase/
     │   └── index.ts
     ├── usage-enforce/        # Trust limit check
     │   └── index.ts
-    ├── event-ingest/         # Analytics batch insert
+    ├── u/         # Analytics batch insert
     │   └── index.ts
     └── classify-image/       # AI image classification
         └── index.ts

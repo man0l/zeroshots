@@ -21,6 +21,8 @@ import { colors, fonts, spacing, radii, shadows, swipeThresholds } from '../../s
 import { getTagColor, classifyAssets } from '../../src/features/screenshot-inbox/classifyAssets'
 import { setCachedTags } from '../../src/features/screenshot-inbox/classificationCache'
 import { useRouter } from 'expo-router'
+import { useAuthStore } from '../../src/state/auth.store'
+import { saveSessionToSupabase } from '../../src/features/cleanup-session/saveSession'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SWIPE_OUT = SCREEN_WIDTH * 0.8
@@ -290,6 +292,12 @@ export default function InboxScreen() {
             onPress={() => {
               const stats = endSession()
               events.sessionCompleted(stats.deletedCount, stats.archivedCount, stats.savedBytes)
+              const { user } = useAuthStore.getState()
+              if (user) {
+                void saveSessionToSupabase(user.id).catch(e => {
+                  if (__DEV__) console.warn('[Session] Auto-save failed:', e)
+                })
+              }
               router.push('/review-session')
             }}
             accessibilityRole="button"
