@@ -11,7 +11,7 @@ import Animated, {
   runOnJS,
 } from 'react-native-reanimated'
 import * as Haptics from 'expo-haptics'
-import { useGallery } from '../../src/hooks/useGallery'
+import { useGalleryContext } from '../../src/context/GalleryContext'
 import { useSessionStore } from '../../src/state/session.store'
 import { useKeptIdsStore } from '../../src/state/keptIds.store'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
@@ -36,7 +36,7 @@ export default function InboxScreen() {
   }, [isWebPreview])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, loadMoreScreenshots, deleteAsset } = useGallery()
+  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, loadMoreScreenshots, deleteAsset } = useGalleryContext()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
   const sessionAssetIdsRef = React.useRef('')

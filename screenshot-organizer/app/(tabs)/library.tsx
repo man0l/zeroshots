@@ -12,9 +12,7 @@ import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import * as Haptics from 'expo-haptics'
-import { useGallery } from '../../src/hooks/useGallery'
-import { useKeptIdsStore } from '../../src/state/keptIds.store'
-import { useSessionStore } from '../../src/state/session.store'
+import { useGalleryContext } from '../../src/context/GalleryContext'
 import { colors, fonts, spacing, radii, shadows } from '../../src/lib/theme'
 import { getTagColor } from '../../src/features/screenshot-inbox/classifyAssets'
 import { useRouter } from 'expo-router'
@@ -30,21 +28,8 @@ type FilterType = 'all' | 'screenshots' | 'oldest' | 'largest'
 export default function LibraryScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, deleteAssets, getUniqueTags, filterByTag, classifyNextBatch, loadMoreScreenshots } = useGallery()
-  const hasKept = useKeptIdsStore((s) => s.hasKept)
-  const actions = useSessionStore((s) => s.actions)
+  const { assets, deleteAssets, getUniqueTags, filterByTag, classifyNextBatch, loadMoreScreenshots } = useGalleryContext()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
-
-  /** Asset IDs kept in current session (not yet persisted to keptIds) */
-  const sessionKeptIds = React.useMemo(
-    () => new Set(actions.filter((a) => a.action === 'keep').map((a) => a.assetId)),
-    [actions]
-  )
-
-  const isKept = useCallback(
-    (id: string) => hasKept(id) || sessionKeptIds.has(id),
-    [hasKept, sessionKeptIds]
-  )
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
 
@@ -52,8 +37,7 @@ export default function LibraryScreen() {
 
   const filteredAssets = React.useMemo(() => {
     let filtered = activeTag ? filterByTag(activeTag) : [...assets]
-    // Exclude assets the user has already kept (swiped right) — they're done with triage
-    filtered = filtered.filter((a) => !isKept(a.id))
+    // Show all screenshots in vault (including kept) — user expects kept items to remain visible
     switch (activeFilter) {
       case 'oldest':
         filtered.sort((a, b) => a.creationTime - b.creationTime)
@@ -65,7 +49,7 @@ export default function LibraryScreen() {
         break
     }
     return filtered
-  }, [assets, activeFilter, activeTag, filterByTag, isKept])
+  }, [assets, activeFilter, activeTag, filterByTag])
 
   const handleEndReached = useCallback(() => {
     // Load more assets when scrolling to end (limitless scrolling)

@@ -1,5 +1,6 @@
 import { Tabs } from 'expo-router'
 import { Platform, View } from 'react-native'
+import { GalleryProvider } from '../../src/context/GalleryContext'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors } from '../../src/lib/theme'
@@ -15,6 +16,7 @@ export default function TabLayout() {
   const height = TAB_BAR_BASE_HEIGHT + insets.bottom
 
   return (
+    <GalleryProvider>
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -96,5 +98,6 @@ export default function TabLayout() {
         }}
       />
     </Tabs>
+    </GalleryProvider>
   )
 }
