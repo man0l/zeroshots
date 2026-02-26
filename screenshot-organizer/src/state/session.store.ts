@@ -1,4 +1,8 @@
 import { create } from 'zustand'
+import { persist, createJSONStorage } from 'zustand/middleware'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+
+const STORAGE_KEY = '@screenshot_organizer_session'
 
 export type ActionType = 'keep' | 'delete' | 'archive'
 
@@ -29,6 +33,9 @@ interface SessionState {
   isRunning: boolean
   
   startSession: (assets: QueuedAsset[]) => void
+  appendToQueue: (assets: QueuedAsset[]) => void
+  /** Filter queue to assets that still exist in toTriage; use fresh asset data. Adjust currentIndex if out of bounds. */
+  reconcileQueue: (toTriage: QueuedAsset[]) => void
   endSession: () => {
     deletedCount: number
     archivedCount: number
@@ -48,7 +55,9 @@ function createSessionId(): string {
   return `session-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
 }
 
-export const useSessionStore = create<SessionState>((set, get) => ({
+export const useSessionStore = create<SessionState>()(
+  persist(
+    (set, get) => ({
   sessionId: null,
   startTime: null,
   queue: [],
@@ -67,6 +76,29 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       deletesUsed: 0,
       isRunning: true,
     })
+  },
+
+  appendToQueue: (newAssets) => {
+    const state = get()
+    const existingIds = new Set(state.queue.map((q) => q.id))
+    const toAppend = newAssets.filter((a) => !existingIds.has(a.id))
+    if (toAppend.length === 0) return
+    set({ queue: [...state.queue, ...toAppend] })
+  },
+
+  reconcileQueue: (toTriage) => {
+    const state = get()
+    const triageMap = new Map(toTriage.map((a) => [a.id, a]))
+    const filtered = state.queue
+      .map((q) => triageMap.get(q.id))
+      .filter((a): a is QueuedAsset => a != null)
+    const currentAsset = state.queue[state.currentIndex]
+    const newIndex =
+      currentAsset && triageMap.has(currentAsset.id)
+        ? filtered.findIndex((a) => a.id === currentAsset.id)
+        : 0
+    const clampedIndex = Math.max(0, Math.min(newIndex >= 0 ? newIndex : 0, filtered.length - 1))
+    set({ queue: filtered, currentIndex: clampedIndex })
   },
 
   endSession: () => {
@@ -133,4 +165,10 @@ export const useSessionStore = create<SessionState>((set, get) => ({
       isRunning: false,
     })
   },
-}))
+}),
+    {
+      name: STORAGE_KEY,
+      storage: createJSONStorage(() => AsyncStorage),
+    }
+  )
+)

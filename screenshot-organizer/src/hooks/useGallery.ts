@@ -15,7 +15,8 @@ const MOCK_ASSETS: ClassifiedAsset[] = [
   { id: '5', uri: 'https://picsum.photos/seed/ss5/400/600', width: 1080, height: 1920, creationTime: Date.now() - 90 * 86400000, size: 5.1 * 1024 * 1024, filename: 'screenshot_5.png', tags: ['article'] },
   { id: '6', uri: 'https://picsum.photos/seed/ss6/400/600', width: 1170, height: 2532, creationTime: Date.now() - 3 * 86400000, size: 0.45 * 1024 * 1024, filename: 'screenshot_6.png', tags: ['code'] },
 ]
-const MAX_ASSETS_TO_LOAD = 300
+const INITIAL_BATCH_SIZE = 80
+const PAGE_SIZE = 50
 // AI classification cap per load to avoid heavy processing; applies to all plans.
 const MAX_ASSETS_TO_CLASSIFY = 40
 const SIZE_FETCH_BATCH = 20
@@ -24,22 +25,61 @@ const SIZE_FETCH_BATCH = 20
 async function fetchAssetSize(asset: MediaLibrary.Asset): Promise<number> {
   if (Platform.OS === 'web') return 0
   try {
-    const info = await MediaLibrary.getAssetInfoAsync(asset)
-    const uri = info.localUri ?? (asset.uri?.startsWith('file://') ? asset.uri : null)
-    if (!uri) return 0
-    const fi = await FileSystem.getInfoAsync(uri, { size: true })
+    // On iOS, allow download from iCloud to get localUri for size
+    const options = Platform.OS === 'ios' ? { shouldDownloadFromNetwork: true } : undefined
+    const info = await MediaLibrary.getAssetInfoAsync(asset, options)
+    let uri = info.localUri ?? (asset.uri?.startsWith('file://') ? asset.uri : null)
+    if (!uri && (asset.uri?.startsWith('file://') || asset.uri?.startsWith('content://'))) {
+      uri = asset.uri
+    }
+    if (!uri) {
+      if (__DEV__) console.log('[fetchAssetSize] No resolvable URI for asset', asset.id)
+      return 0
+    }
+    const fi = await FileSystem.getInfoAsync(uri)
     if (fi.exists && 'size' in fi && typeof fi.size === 'number') return fi.size
-  } catch {
-    // Ignore — size stays 0
+    if (__DEV__) console.log('[fetchAssetSize] FileSystem.getInfoAsync failed or no size for', asset.id)
+  } catch (e) {
+    if (__DEV__) console.warn('[fetchAssetSize] Error for asset', asset.id, e)
   }
   return 0
+}
+
+/** Process raw MediaLibrary assets into ClassifiedAssets with sizes and cached tags. */
+async function processAssetsToScreenshots(
+  rawAssets: MediaLibrary.Asset[],
+  cached: Record<string, string[]>
+): Promise<ClassifiedAsset[]> {
+  const filtered = rawAssets.filter(isScreenshot)
+  const screenshots: ClassifiedAsset[] = []
+  for (let i = 0; i < filtered.length; i += SIZE_FETCH_BATCH) {
+    const chunk = filtered.slice(i, i + SIZE_FETCH_BATCH)
+    const sizes = await Promise.all(chunk.map((a) => fetchAssetSize(a)))
+    for (let j = 0; j < chunk.length; j++) {
+      const asset = chunk[j]
+      screenshots.push({
+        id: asset.id,
+        uri: asset.uri,
+        width: asset.width,
+        height: asset.height,
+        creationTime: asset.creationTime,
+        size: sizes[j] ?? 0,
+        filename: asset.filename ?? 'unknown.jpg',
+        tags: cached[asset.id] ?? [],
+      })
+    }
+  }
+  return screenshots
 }
 
 export function useGallery() {
   const isWeb = Platform.OS === 'web'
   const [assets, setAssets] = useState<ClassifiedAsset[]>([])
   const [isLoading, setIsLoading] = useState(!isWeb)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+  const [hasNextPage, setHasNextPage] = useState(false)
   const [isClassifying, setIsClassifying] = useState(false)
+  const endCursorRef = useRef<string | null>(null)
   const [permissionStatus, requestPermission] = Platform.OS === 'web'
     ? [{ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse, async () => ({ granted: true, canAskAgain: true, expires: 'never', status: 'granted' } as MediaLibrary.PermissionResponse)]
     : MediaLibrary.usePermissions()
@@ -74,66 +114,6 @@ export function useGallery() {
     return () => subscription.remove()
   }, [permissionStatus?.granted])
 
-  const loadScreenshots = async () => {
-    try {
-      setIsLoading(true)
-      // Cancel any in-flight classification loop from previous loads.
-      classificationRunIdRef.current += 1
-      
-      const media = await MediaLibrary.getAssetsAsync({
-        mediaType: 'photo',
-        sortBy: ['creationTime'],
-        first: MAX_ASSETS_TO_LOAD,
-      })
-
-      const filtered = media.assets.filter(isScreenshot)
-      const ids = filtered.map(a => a.id)
-      const cached = await getCachedTags(ids)
-
-      // Fetch file sizes in batches (getAssetsAsync doesn't provide size)
-      const screenshots: ClassifiedAsset[] = []
-      for (let i = 0; i < filtered.length; i += SIZE_FETCH_BATCH) {
-        const chunk = filtered.slice(i, i + SIZE_FETCH_BATCH)
-        const sizes = await Promise.all(chunk.map(a => fetchAssetSize(a)))
-        for (let j = 0; j < chunk.length; j++) {
-          const asset = chunk[j]
-          screenshots.push({
-            id: asset.id,
-            uri: asset.uri,
-            width: asset.width,
-            height: asset.height,
-            creationTime: asset.creationTime,
-            size: sizes[j] ?? 0,
-            filename: asset.filename ?? 'unknown.jpg',
-            tags: cached[asset.id] ?? [],
-          })
-        }
-      }
-
-      // In dev, when gallery is empty (e.g. emulator), show demo assets so you can test the UI and flows
-      const useDemoAssets = __DEV__ && screenshots.length === 0
-      const assetsToSet = useDemoAssets
-        ? MOCK_ASSETS.map((a, i) => ({ ...a, id: `demo-${i}` }))
-        : screenshots
-
-      setAssets(assetsToSet)
-
-      // Only classify real assets that have no cached tags — respect AI setting (skip for demo)
-      if (!useDemoAssets && screenshots.length > 0) {
-        const { aiEnabled } = useSettingsStore.getState()
-        const limit = aiEnabled ? MAX_ASSETS_TO_CLASSIFY : 0
-        const toClassify = screenshots.filter(a => !cached[a.id]?.length).slice(0, limit)
-        if (toClassify.length > 0) {
-          classifyScreenshots(toClassify)
-        }
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err : new Error('Failed to load gallery'))
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const classifyScreenshots = useCallback(async (screenshots: ClassifiedAsset[]) => {
     const runId = ++classificationRunIdRef.current
     try {
@@ -162,6 +142,87 @@ export function useGallery() {
       }
     }
   }, [])
+
+  const loadScreenshots = useCallback(async () => {
+    try {
+      setIsLoading(true)
+      classificationRunIdRef.current += 1
+
+      const media = await MediaLibrary.getAssetsAsync({
+        mediaType: 'photo',
+        sortBy: ['creationTime'],
+        first: INITIAL_BATCH_SIZE,
+      })
+
+      endCursorRef.current = media.endCursor ?? null
+      setHasNextPage(media.hasNextPage ?? false)
+
+      const ids = media.assets.map((a) => a.id)
+      const cached = await getCachedTags(ids)
+      const screenshots = await processAssetsToScreenshots(media.assets, cached)
+
+      const useDemoAssets = __DEV__ && screenshots.length === 0
+      const assetsToSet = useDemoAssets
+        ? MOCK_ASSETS.map((a, i) => ({ ...a, id: `demo-${i}` }))
+        : screenshots
+
+      setAssets(assetsToSet)
+
+      if (!useDemoAssets && screenshots.length > 0) {
+        const { aiEnabled } = useSettingsStore.getState()
+        const limit = aiEnabled ? MAX_ASSETS_TO_CLASSIFY : 0
+        const toClassify = screenshots.filter((a) => !cached[a.id]?.length).slice(0, limit)
+        if (toClassify.length > 0) {
+          classifyScreenshots(toClassify)
+        }
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err : new Error('Failed to load gallery'))
+    } finally {
+      setIsLoading(false)
+    }
+  }, [classifyScreenshots])
+
+  const loadMoreScreenshots = useCallback(async () => {
+    if (Platform.OS === 'web' || isLoadingMore || !hasNextPage || !endCursorRef.current) return
+    try {
+      setIsLoadingMore(true)
+      const media = await MediaLibrary.getAssetsAsync({
+        mediaType: 'photo',
+        sortBy: ['creationTime'],
+        first: PAGE_SIZE,
+        after: endCursorRef.current,
+      })
+
+      endCursorRef.current = media.endCursor ?? null
+      setHasNextPage(media.hasNextPage ?? false)
+
+      if (media.assets.length === 0) return
+
+      const ids = media.assets.map((a) => a.id)
+      const cached = await getCachedTags(ids)
+      const newScreenshots = await processAssetsToScreenshots(media.assets, cached)
+
+      setAssets((prev) => {
+        const existingIds = new Set(prev.map((a) => a.id))
+        const deduped = newScreenshots.filter((a) => !existingIds.has(a.id))
+        return [...prev, ...deduped]
+      })
+
+      if (newScreenshots.length > 0) {
+        const { aiEnabled } = useSettingsStore.getState()
+        const limit = aiEnabled ? MAX_ASSETS_TO_CLASSIFY : 0
+        const toClassify = newScreenshots.filter((a) => !cached[a.id]?.length).slice(0, limit)
+        if (toClassify.length > 0) {
+          classifyScreenshots(toClassify)
+        }
+      }
+    } catch (err) {
+      if (__DEV__) console.warn('[useGallery] loadMoreScreenshots failed:', err)
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }, [classifyScreenshots, hasNextPage])
 
   const deleteAsset = async (assetId: string) => {
     if (assetId.startsWith('demo-')) {
@@ -229,11 +290,14 @@ export function useGallery() {
   return {
     assets,
     isLoading,
+    isLoadingMore,
+    hasNextPage,
     isClassifying,
     permissionStatus,
     requestPermission: requestGalleryPermission,
     error,
     loadScreenshots,
+    loadMoreScreenshots,
     deleteAsset,
     deleteAssets,
     getUniqueTags,

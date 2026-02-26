@@ -36,7 +36,7 @@ export default function InboxScreen() {
   }, [isWebPreview])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, deleteAsset } = useGallery()
+  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, loadMoreScreenshots, deleteAsset } = useGallery()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
   const sessionAssetIdsRef = React.useRef('')
@@ -44,6 +44,8 @@ export default function InboxScreen() {
     queue, 
     currentIndex, 
     startSession, 
+    appendToQueue,
+    reconcileQueue,
     recordAction, 
     nextAsset,
     deletesUsed,
@@ -58,10 +60,16 @@ export default function InboxScreen() {
 
   const keptIds = useKeptIdsStore((s) => s.ids)
   const [keptIdsHydrated, setKeptIdsHydrated] = React.useState(false)
+  const [sessionHydrated, setSessionHydrated] = React.useState(false)
   React.useEffect(() => {
     const check = () => setKeptIdsHydrated(true)
     if (useKeptIdsStore.persist.hasHydrated()) check()
     return useKeptIdsStore.persist.onFinishHydration(check)
+  }, [])
+  React.useEffect(() => {
+    const check = () => setSessionHydrated(true)
+    if (useSessionStore.persist?.hasHydrated?.()) check()
+    return useSessionStore.persist?.onFinishHydration?.(check)
   }, [])
   // Start or restart session when the gallery asset set changes (e.g. after adding a screenshot or pull-to-refresh)
   // Exclude assets the user has already kept — they're done with triage
@@ -71,23 +79,43 @@ export default function InboxScreen() {
   }, [assets, keptIds])
 
   React.useEffect(() => {
-    if (!keptIdsHydrated) return
+    if (!keptIdsHydrated || !sessionHydrated) return
     if (toTriage.length === 0) {
       if (assets.length > 0) {
-        // All assets have been kept — nothing left to triage
         endSession()
       }
       return
     }
-    // Don't restart mid-session (e.g. when user keeps — we just advance, not rebuild)
-    if (isRunning) return
+    if (isRunning && toTriage.length > 0) {
+      // Sync persisted queue with current assets (filter out deleted, use fresh data)
+      reconcileQueue(toTriage)
+      return
+    }
     const ids = toTriage.map((a) => a.id).sort().join(',')
     if (ids !== sessionAssetIdsRef.current) {
       sessionAssetIdsRef.current = ids
       startSession(toTriage)
       events.sessionStarted(toTriage.length)
     }
-  }, [toTriage, assets.length, startSession, endSession, isRunning, keptIdsHydrated])
+  }, [toTriage, assets.length, startSession, endSession, reconcileQueue, isRunning, keptIdsHydrated, sessionHydrated])
+
+  // Load more assets when user nears end of queue (limitless scrolling)
+  const LOAD_MORE_THRESHOLD = 10
+  React.useEffect(() => {
+    if (!isWebPreview && isRunning && queue.length > 0 && currentIndex >= queue.length - LOAD_MORE_THRESHOLD) {
+      loadMoreScreenshots()
+    }
+  }, [isWebPreview, isRunning, queue.length, currentIndex, loadMoreScreenshots])
+
+  // Append newly loaded assets to queue when in session (so limitless scroll works in inbox)
+  React.useEffect(() => {
+    if (!keptIdsHydrated || !isRunning || toTriage.length <= queue.length) return
+    const queueIds = new Set(queue.map((q) => q.id))
+    const newItems = toTriage.filter((a) => !queueIds.has(a.id))
+    if (newItems.length > 0) {
+      appendToQueue(newItems)
+    }
+  }, [keptIdsHydrated, isRunning, toTriage, queue, appendToQueue])
 
   const handleRefresh = useCallback(async () => {
     endSession()

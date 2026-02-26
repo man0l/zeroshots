@@ -133,7 +133,7 @@ export default function SettingsScreen() {
               ios_backgroundColor={colors.surfaceHighlight}
             />
           </View>
-          <View style={styles.row}>
+          <View style={styles.row} testID="store-ml-logs-row">
             <View style={styles.aiLabelGroup}>
               <Text style={styles.label}>Store ML logs</Text>
               <Text style={styles.aiSubLabel}>
@@ -146,10 +146,11 @@ export default function SettingsScreen() {
               trackColor={{ false: colors.surfaceHighlight, true: colors.primary }}
               thumbColor="#FFFFFF"
               ios_backgroundColor={colors.surfaceHighlight}
+              accessibilityLabel="Store ML logs"
             />
           </View>
           {mlLogsEnabled && (
-            <View style={styles.suggestedTagsSection}>
+            <View style={styles.suggestedTagsSection} testID="tag-suggestions-section">
               <Text style={styles.suggestedTagsLabel}>Suggested tags from your usage</Text>
               {tagSuggestionsLoading ? (
                 <Text style={styles.suggestedTagsMuted}>Loading…</Text>
