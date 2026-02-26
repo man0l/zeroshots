@@ -51,7 +51,10 @@ export function trackEvent(name: EventName, properties?: EventProperties): void 
     try {
       const { data: { session } } = await supabase.auth.getSession()
       const userId = session?.user?.id ?? null
-      if (!userId) return
+      if (!userId) {
+        if (__DEV__) console.warn('[Analytics] Skipping event — no authenticated user')
+        return
+      }
 
       const { error } = await ingestEvents([{
         user_id: userId,
