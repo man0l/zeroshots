@@ -12,12 +12,15 @@ serve(async (req) => {
   }
 
   try {
+    // Use service role to bypass Kong stripping credentials when proxying to PostgREST.
+    // user_id in events must match the caller's JWT sub (validated by Kong key-auth for the request).
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      serviceKey ?? Deno.env.get('SUPABASE_ANON_KEY') ?? '',
       {
         db: { schema: 'screenshot_organizer' },
-        global: { headers: { Authorization: req.headers.get('Authorization')! } },
+        auth: { persistSession: false, autoRefreshToken: false },
       }
     )
 
