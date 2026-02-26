@@ -15,7 +15,8 @@ serve(async (req) => {
   try {
     // Call PostgREST directly to bypass Kong (which strips credentials). Service role for inserts.
     const restUrl = (Deno.env.get('SUPABASE_INTERNAL_REST_URL') ?? Deno.env.get('SUPABASE_URL') ?? '').replace(/\/$/, '')
-    const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY')
+    // Prefer keys that are actual JWTs; SUPABASE_SERVICE_ROLE_KEY may be literal ${SERVICE_ROLE_KEY} if compose substitution failed
+    const serviceKey = Deno.env.get('SUPABASE_SERVICE_KEY') ?? Deno.env.get('SERVICE_ROLE_KEY') ?? Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
     if (!restUrl || !serviceKey) {
       throw new Error('SUPABASE_INTERNAL_REST_URL and service role key required')
     }
