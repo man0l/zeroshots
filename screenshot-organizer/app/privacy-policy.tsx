@@ -71,7 +71,7 @@ export default function PrivacyPolicyScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.lastUpdated}>Last updated: February 25, 2026</Text>
+        <Text style={styles.lastUpdated}>Last updated: February 26, 2026</Text>
 
         <Section title="1. Introduction">
           <Body>
@@ -101,7 +101,14 @@ export default function PrivacyPolicyScreen() {
           <Body>
             <Highlight>Usage analytics (opt-out available)</Highlight> — We collect anonymised
             events such as "session completed" to improve the app. No photo content is included.
-            You can disable this in Settings → Analytics.
+            You can disable this in Settings → AI Features (analytics toggle).
+          </Body>
+          <Body>
+            <Highlight>ML classification logs (opt-in only)</Highlight> — If you explicitly turn
+            on "Store ML logs" in Settings → AI Features, we save anonymised label and tag
+            summaries (e.g. "receipt", "photo") to our servers to debug and improve
+            classification. No images or photo content are uploaded; this is off by default and
+            you can turn it off at any time.
           </Body>
         </Section>
 
@@ -120,6 +127,11 @@ export default function PrivacyPolicyScreen() {
           <Bullet>
             You can turn AI sorting off at any time in Settings → AI Features. When off, we use a
             default tag only; no image analysis is performed.
+          </Bullet>
+          <Bullet>
+            <Highlight>Store ML logs</Highlight> is a separate, opt-in setting (off by default).
+            Only when you turn it on do we send anonymised label and tag summaries to our servers.
+            No images are ever sent. You can disable it at any time in Settings → AI Features.
           </Bullet>
 
           <Body style={{ marginTop: spacing.md }}>
@@ -180,8 +192,10 @@ export default function PrivacyPolicyScreen() {
             <Highlight>Portability</Highlight>: Receive your data in a machine-readable format.
           </Bullet>
           <Bullet>
-            <Highlight>Opt-out</Highlight>: Turn off AI sorting or disable analytics at any time
-            in Settings without affecting core app functionality.
+            <Highlight>Opt-out / Opt-in</Highlight>: Turn off AI sorting or disable analytics at
+            any time in Settings. "Store ML logs" is opt-in only (off by default); turn it off
+            anytime to stop sending any classification summaries. Core app functionality does not
+            depend on these settings.
           </Bullet>
           <Bullet>
             <Highlight>Complaint</Highlight>: Lodge a complaint with your national Data Protection
