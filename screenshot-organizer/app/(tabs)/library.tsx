@@ -28,7 +28,7 @@ type FilterType = 'all' | 'screenshots' | 'oldest' | 'largest'
 export default function LibraryScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, deleteAssets, getUniqueTags, filterByTag } = useGallery()
+  const { assets, deleteAssets, getUniqueTags, filterByTag, classifyNextBatch } = useGallery()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
@@ -51,6 +51,13 @@ export default function LibraryScreen() {
     
     return filtered
   }, [assets, activeFilter, activeTag, filterByTag])
+
+  const handleEndReached = useCallback(() => {
+    // Only auto-classify when showing the full, unfiltered library (All Items + All Tags).
+    if (activeFilter === 'all' && !activeTag) {
+      classifyNextBatch()
+    }
+  }, [activeFilter, activeTag, classifyNextBatch])
 
   const toggleSelection = useCallback((id: string) => {
     Haptics.selectionAsync()
@@ -219,6 +226,8 @@ export default function LibraryScreen() {
           style={styles.grid}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
+          onEndReached={handleEndReached}
+          onEndReachedThreshold={0.5}
         />
       </View>
 

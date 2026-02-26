@@ -14,8 +14,10 @@ import * as Haptics from 'expo-haptics'
 import { useGallery } from '../../src/hooks/useGallery'
 import { useSessionStore } from '../../src/state/session.store'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
+import { useSettingsStore } from '../../src/state/settings.store'
 import { colors, fonts, spacing, radii, shadows, swipeThresholds } from '../../src/lib/theme'
-import { getTagColor } from '../../src/features/screenshot-inbox/classifyAssets'
+import { getTagColor, classifyAssets } from '../../src/features/screenshot-inbox/classifyAssets'
+import { setCachedTags } from '../../src/features/screenshot-inbox/classificationCache'
 import { useRouter } from 'expo-router'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -45,6 +47,7 @@ export default function InboxScreen() {
     endSession,
   } = useSessionStore()
   const { entitlement, deletesRemaining } = useEntitlementStore()
+  const { aiEnabled } = useSettingsStore()
 
   const translateX = useSharedValue(0)
   const scale = useSharedValue(1)
@@ -64,9 +67,27 @@ export default function InboxScreen() {
     await loadScreenshots()
   }, [endSession, loadScreenshots])
 
-  const handleAction = useCallback((action: 'keep' | 'delete' | 'archive') => {
+  const handleAction = useCallback(async (action: 'keep' | 'delete' | 'archive') => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
-    
+
+    // On-demand classification: if this asset is effectively untagged, run one-off tagging before we act.
+    if (aiEnabled) {
+      const state = useSessionStore.getState()
+      const asset = state.queue[state.currentIndex]
+      if (asset && (!asset.tags || asset.tags.length === 0 || (asset.tags.length === 1 && asset.tags[0] === 'screenshot'))) {
+        try {
+          const [classified] = await classifyAssets([asset])
+          if (classified?.tags?.length) {
+            await setCachedTags({ [classified.id]: classified.tags })
+          }
+        } catch (e) {
+          if (__DEV__) {
+            console.warn('[Stack] On-swipe classification failed', e)
+          }
+        }
+      }
+    }
+
     if (action === 'delete' && entitlement === 'free' && deletesRemaining <= 0) {
       router.push('/paywall')
       return
@@ -87,10 +108,10 @@ export default function InboxScreen() {
       nextAsset()
       translateX.value = 0
     }, 200)
-  }, [entitlement, deletesRemaining])
+  }, [aiEnabled, entitlement, deletesRemaining])
 
-  const handleSwipeLeft = useCallback(() => handleAction('delete'), [handleAction])
-  const handleSwipeRight = useCallback(() => handleAction('keep'), [handleAction])
+  const handleSwipeLeft = useCallback(() => { void handleAction('delete') }, [handleAction])
+  const handleSwipeRight = useCallback(() => { void handleAction('keep') }, [handleAction])
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {

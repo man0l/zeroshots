@@ -183,6 +183,17 @@ export function useGallery() {
     return assets.filter(asset => asset.tags?.includes(tag))
   }, [assets])
 
+  // Classify the next batch of untagged assets (used by Vault infinite scroll).
+  const classifyNextBatch = useCallback(async () => {
+    const { aiEnabled } = useSettingsStore.getState()
+    if (!aiEnabled || assets.length === 0) return
+    // Consider assets that are effectively untagged / default-tagged.
+    const candidates = assets.filter(a => !a.tags || a.tags.length === 0 || (a.tags.length === 1 && a.tags[0] === 'screenshot'))
+    if (candidates.length === 0) return
+    const toClassify = candidates.slice(0, MAX_ASSETS_TO_CLASSIFY)
+    await classifyScreenshots(toClassify)
+  }, [assets, classifyScreenshots])
+
   const requestGalleryPermission = useCallback(async () => {
     if (isWeb) {
       return null
@@ -202,6 +213,7 @@ export function useGallery() {
     deleteAssets,
     getUniqueTags,
     filterByTag,
+    classifyNextBatch,
   }
 }
 
