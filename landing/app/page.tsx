@@ -110,13 +110,6 @@ export default function LandingPage() {
                 >
                   Get Early Access
                 </a>
-                <button
-                  type="button"
-                  className="flex h-12 items-center justify-center gap-2 rounded-lg border border-slate-700 bg-transparent px-8 text-base font-medium text-white hover:bg-slate-800 transition-all"
-                >
-                  <span className="material-symbols-outlined">play_circle</span>
-                  Watch Demo
-                </button>
               </div>
             </div>
 
