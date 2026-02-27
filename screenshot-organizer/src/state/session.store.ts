@@ -47,6 +47,7 @@ interface SessionState {
   nextAsset: () => void
   undoLastAction: () => void
   resetSession: () => void
+  updateQueueAssetTags: (assetId: string, tags: string[]) => void
 }
 
 function createSessionId(): string {
@@ -165,6 +166,12 @@ export const useSessionStore = create<SessionState>()(
       deletesUsed: 0,
       isRunning: false,
     })
+  },
+
+  updateQueueAssetTags: (assetId, tags) => {
+    set(state => ({
+      queue: state.queue.map(q => q.id === assetId ? { ...q, tags } : q),
+    }))
   },
 }),
     {

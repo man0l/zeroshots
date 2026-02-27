@@ -1,12 +1,13 @@
-import React, { useState, useCallback } from 'react'
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  FlatList, 
+import React, { useState, useCallback, useEffect } from 'react'
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
   Pressable,
   Dimensions,
   ScrollView,
+  Modal,
 } from 'react-native'
 import { Image } from 'expo-image'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -15,6 +16,9 @@ import * as Haptics from 'expo-haptics'
 import { useGalleryContext } from '../../src/context/GalleryContext'
 import { colors, fonts, spacing, radii, shadows } from '../../src/lib/theme'
 import { getTagColor } from '../../src/features/screenshot-inbox/classifyAssets'
+import { VALID_TAGS } from '../../src/features/screenshot-inbox/onDeviceTagMapping'
+import { useKeptIdsStore } from '../../src/state/keptIds.store'
+import { useSettingsStore } from '../../src/state/settings.store'
 import { useRouter } from 'expo-router'
 // expo-linear-gradient crashes under Fabric (newArchEnabled). Use a plain fade View.
 
@@ -23,22 +27,41 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const GRID_GAP = 1
 const GRID_SIZE = (SCREEN_WIDTH - GRID_GAP * 2) / 3
 
-type FilterType = 'all' | 'screenshots' | 'oldest' | 'largest'
+type FilterType = 'all' | 'kept' | 'oldest' | 'largest'
 
 export default function LibraryScreen() {
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, deleteAssets, getUniqueTags, filterByTag, classifyNextBatch, loadMoreScreenshots } = useGalleryContext()
+  const { assets, deleteAssets, getUniqueTags, filterByTag, classifyNextBatch, loadMoreScreenshots, updateAssetTags, loadKeptAssets } = useGalleryContext()
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
+  const keptIds = useKeptIdsStore(s => s.ids)
+  const { customTags } = useSettingsStore()
+  // Tag picker state
+  const [tagPickerAssetId, setTagPickerAssetId] = useState<string | null>(null)
+  const [tagPickerSelected, setTagPickerSelected] = useState<string[]>([])
 
   const availableTags = React.useMemo(() => getUniqueTags(), [getUniqueTags])
+  const allAvailableTags = React.useMemo(
+    () => Array.from(new Set([...VALID_TAGS, ...customTags])).sort(),
+    [customTags]
+  )
+
+  // When switching to "kept" filter, ensure older kept assets are loaded
+  useEffect(() => {
+    if (activeFilter === 'kept') {
+      loadKeptAssets(keptIds)
+    }
+  }, [activeFilter, keptIds, loadKeptAssets])
 
   const filteredAssets = React.useMemo(() => {
+    const keptSet = new Set(keptIds)
     let filtered = activeTag ? filterByTag(activeTag) : [...assets]
-    // Show all screenshots in vault (including kept) — user expects kept items to remain visible
     switch (activeFilter) {
+      case 'kept':
+        filtered = filtered.filter(a => keptSet.has(a.id))
+        break
       case 'oldest':
         filtered.sort((a, b) => a.creationTime - b.creationTime)
         break
@@ -49,7 +72,7 @@ export default function LibraryScreen() {
         break
     }
     return filtered
-  }, [assets, activeFilter, activeTag, filterByTag])
+  }, [assets, activeFilter, activeTag, filterByTag, keptIds])
 
   const handleEndReached = useCallback(() => {
     // Load more assets when scrolling to end (limitless scrolling)
@@ -73,6 +96,24 @@ export default function LibraryScreen() {
     })
   }, [])
 
+  const openTagPicker = useCallback((assetId: string, currentTags: string[]) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+    setTagPickerAssetId(assetId)
+    setTagPickerSelected(currentTags)
+  }, [])
+
+  const togglePickerTag = useCallback((tag: string) => {
+    setTagPickerSelected(prev =>
+      prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]
+    )
+  }, [])
+
+  const savePickerTags = useCallback(async () => {
+    if (!tagPickerAssetId) return
+    await updateAssetTags(tagPickerAssetId, tagPickerSelected)
+    setTagPickerAssetId(null)
+  }, [tagPickerAssetId, tagPickerSelected, updateAssetTags])
+
   const handleBatchDelete = async () => {
     if (selectedIds.size === 0) return
     
@@ -88,14 +129,14 @@ export default function LibraryScreen() {
 
   const filters: { key: FilterType; label: string }[] = [
     { key: 'all', label: 'All Items' },
-    { key: 'screenshots', label: 'Screenshots' },
+    { key: 'kept', label: `Kept (${keptIds.length})` },
     { key: 'oldest', label: 'Oldest' },
     { key: 'largest', label: 'Largest' },
   ]
 
   const renderItem = ({ item, index }: { item: typeof assets[0]; index: number }) => {
     const isSelected = selectedIds.has(item.id)
-    
+
     return (
       <Pressable
         style={[
@@ -104,6 +145,8 @@ export default function LibraryScreen() {
           { marginBottom: GRID_GAP },
         ]}
         onPress={() => toggleSelection(item.id)}
+        onLongPress={() => openTagPicker(item.id, item.tags ?? [])}
+        delayLongPress={400}
       >
         <Image
           source={{ uri: item.uri }}
@@ -254,6 +297,37 @@ export default function LibraryScreen() {
           )}
         </View>
       </View>
+
+      {/* Tag picker modal — long-press any grid item to edit tags */}
+      <Modal
+        visible={tagPickerAssetId !== null}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTagPickerAssetId(null)}
+      >
+        <Pressable style={styles.tagPickerOverlay} onPress={() => setTagPickerAssetId(null)} />
+        <View style={styles.tagPickerSheet}>
+          <Text style={styles.tagPickerTitle}>Edit Tags</Text>
+          <Text style={styles.tagPickerHint}>Tap tags to toggle. Long-press any photo to edit.</Text>
+          <ScrollView contentContainerStyle={styles.tagPickerGrid}>
+            {allAvailableTags.map(tag => {
+              const active = tagPickerSelected.includes(tag)
+              return (
+                <Pressable
+                  key={tag}
+                  style={[styles.tagChip, active && { backgroundColor: getTagColor(tag), borderColor: getTagColor(tag) }]}
+                  onPress={() => togglePickerTag(tag)}
+                >
+                  <Text style={[styles.tagChipText, active && styles.tagChipTextActive]}>#{tag}</Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+          <Pressable style={styles.tagPickerDone} onPress={savePickerTags}>
+            <Text style={styles.tagPickerDoneText}>Done</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -471,5 +545,66 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 3,
     color: colors.textPrimary,
+  },
+  tagPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  tagPickerSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.xl,
+    paddingBottom: 40,
+    maxHeight: '60%',
+  },
+  tagPickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    fontFamily: fonts.display,
+    marginBottom: spacing.xs,
+  },
+  tagPickerHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  tagPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  tagChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: colors.surfaceHighlight,
+  },
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tagChipTextActive: {
+    color: '#fff',
+  },
+  tagPickerDone: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  tagPickerDoneText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.background,
+    fontFamily: fonts.display,
   },
 })

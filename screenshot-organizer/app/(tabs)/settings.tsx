@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { View, Text, StyleSheet, Pressable, Switch, Alert, Platform } from 'react-native'
+import { View, Text, StyleSheet, Pressable, Switch, Alert, Platform, TextInput, ScrollView } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
@@ -16,7 +16,8 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { entitlement, deletesRemaining, setEntitlement } = useEntitlementStore()
-  const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled } = useSettingsStore()
+  const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled, customTags, addCustomTag, removeCustomTag } = useSettingsStore()
+  const [newTagInput, setNewTagInput] = useState('')
   const [mlKitTestStatus, setMlKitTestStatus] = useState<string | null>(null)
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[] | null>(null)
   const [tagSuggestionsLoading, setTagSuggestionsLoading] = useState(false)
@@ -155,9 +156,21 @@ export default function SettingsScreen() {
               {tagSuggestionsLoading ? (
                 <Text style={styles.suggestedTagsMuted}>Loading…</Text>
               ) : tagSuggestions && tagSuggestions.length > 0 ? (
-                <Text style={styles.suggestedTagsText} selectable>
-                  Consider adding: {tagSuggestions.map(s => `\`${s.rawLabel}\` (${s.count}x)`).join(', ')}
-                </Text>
+                <View style={styles.suggestionList}>
+                  {tagSuggestions.map(s => (
+                    <View key={s.rawLabel} style={styles.suggestionRow}>
+                      <Text style={styles.suggestedTagsText}>{s.rawLabel} <Text style={styles.suggestedTagsMuted}>({s.count}×)</Text></Text>
+                      <Pressable
+                        style={styles.addTagButton}
+                        onPress={() => addCustomTag(s.rawLabel)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Add ${s.rawLabel} as custom tag`}
+                      >
+                        <Text style={styles.addTagButtonText}>+ Add</Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
               ) : (
                 <Text style={styles.suggestedTagsMuted}>
                   No unmapped labels yet. Classify more screenshots to see suggestions.
@@ -174,6 +187,64 @@ export default function SettingsScreen() {
             <Text style={styles.privacyLinkText}>Privacy Policy</Text>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </Pressable>
+        </View>
+      </View>
+
+      {/* Custom Tags */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>My Tags</Text>
+        <View style={styles.card}>
+          <View style={styles.tagInputRow}>
+            <TextInput
+              style={styles.tagInput}
+              value={newTagInput}
+              onChangeText={setNewTagInput}
+              placeholder="Add a tag…"
+              placeholderTextColor={colors.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                if (newTagInput.trim()) {
+                  addCustomTag(newTagInput.trim())
+                  setNewTagInput('')
+                }
+              }}
+            />
+            <Pressable
+              style={[styles.addTagButton, !newTagInput.trim() && { opacity: 0.4 }]}
+              disabled={!newTagInput.trim()}
+              onPress={() => {
+                if (newTagInput.trim()) {
+                  addCustomTag(newTagInput.trim())
+                  setNewTagInput('')
+                }
+              }}
+              accessibilityRole="button"
+              accessibilityLabel="Add tag"
+            >
+              <Text style={styles.addTagButtonText}>Add</Text>
+            </Pressable>
+          </View>
+          {customTags.length > 0 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.customTagsRow}>
+              {customTags.map(tag => (
+                <Pressable
+                  key={tag}
+                  style={styles.customTagChip}
+                  onPress={() => removeCustomTag(tag)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove tag ${tag}`}
+                  accessibilityHint="Tap to remove"
+                >
+                  <Text style={styles.customTagChipText}>#{tag}</Text>
+                  <Text style={styles.customTagRemove}>✕</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          ) : (
+            <Text style={styles.suggestedTagsMuted}>No custom tags yet. Add one above.</Text>
+          )}
         </View>
       </View>
 
@@ -335,6 +406,69 @@ const styles = StyleSheet.create({
   },
   mlKitStatus: {
     fontSize: 14,
+    color: colors.textMuted,
+  },
+  suggestionList: {
+    gap: spacing.sm,
+  },
+  suggestionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  addTagButton: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radii.sm,
+  },
+  addTagButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.background,
+  },
+  tagInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  tagInput: {
+    flex: 1,
+    height: 40,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: radii.sm,
+    paddingHorizontal: spacing.md,
+    fontSize: 15,
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+  },
+  customTagsRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  customTagChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surfaceHighlight,
+    borderRadius: radii.full,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
+  customTagChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  customTagRemove: {
+    fontSize: 10,
     color: colors.textMuted,
   },
 })

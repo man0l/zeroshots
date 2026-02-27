@@ -1,5 +1,5 @@
-import React, { useCallback } from 'react'
-import { View, Text, StyleSheet, Dimensions, Pressable, Platform, Linking } from 'react-native'
+import React, { useCallback, useState } from 'react'
+import { View, Text, StyleSheet, Dimensions, Pressable, Platform, Linking, Modal, ScrollView } from 'react-native'
 import { Image } from 'expo-image'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
@@ -19,6 +19,7 @@ import { useSettingsStore } from '../../src/state/settings.store'
 import { events } from '../../src/features/analytics/events'
 import { colors, fonts, spacing, radii, shadows, swipeThresholds } from '../../src/lib/theme'
 import { getTagColor, classifyAssets } from '../../src/features/screenshot-inbox/classifyAssets'
+import { VALID_TAGS } from '../../src/features/screenshot-inbox/onDeviceTagMapping'
 import { setCachedTags } from '../../src/features/screenshot-inbox/classificationCache'
 import { logMlClassification } from '../../src/features/analytics/mlLogs'
 import { useRouter } from 'expo-router'
@@ -37,9 +38,11 @@ export default function InboxScreen() {
   }, [isWebPreview])
   const router = useRouter()
   const insets = useSafeAreaInsets()
-  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, loadMoreScreenshots, deleteAsset } = useGalleryContext()
+  const { assets, isLoading, permissionStatus, requestPermission, loadScreenshots, loadMoreScreenshots, deleteAsset, updateAssetTags } = useGalleryContext()
   const [permissionMessage, setPermissionMessage] = React.useState<string | null>(null)
   const [webMessage, setWebMessage] = React.useState<string | null>(null)
+  const [tagPickerVisible, setTagPickerVisible] = useState(false)
+  const [tagPickerSelected, setTagPickerSelected] = useState<string[]>([])
   const sessionAssetIdsRef = React.useRef('')
   const { 
     queue, 
@@ -54,7 +57,11 @@ export default function InboxScreen() {
     endSession,
   } = useSessionStore()
   const { entitlement, deletesRemaining } = useEntitlementStore()
-  const { aiEnabled } = useSettingsStore()
+  const { aiEnabled, customTags } = useSettingsStore()
+  const allTags = React.useMemo(
+    () => Array.from(new Set([...VALID_TAGS, ...customTags])).sort(),
+    [customTags]
+  )
 
   const translateX = useSharedValue(0)
   const scale = useSharedValue(1)
@@ -192,6 +199,24 @@ export default function InboxScreen() {
 
   const handleSwipeLeft = useCallback(() => { void handleAction('delete') }, [handleAction])
   const handleSwipeRight = useCallback(() => { void handleAction('keep') }, [handleAction])
+
+  const openTagPicker = useCallback(() => {
+    const state = useSessionStore.getState()
+    const asset = state.queue[state.currentIndex]
+    if (!asset) return
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    setTagPickerSelected(asset.tags ?? [])
+    setTagPickerVisible(true)
+  }, [])
+
+  const saveTagPicker = useCallback(async () => {
+    const state = useSessionStore.getState()
+    const asset = state.queue[state.currentIndex]
+    if (!asset) { setTagPickerVisible(false); return }
+    setTagPickerVisible(false)
+    await updateAssetTags(asset.id, tagPickerSelected)
+    useSessionStore.getState().updateQueueAssetTags(asset.id, tagPickerSelected)
+  }, [tagPickerSelected, updateAssetTags])
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
@@ -408,14 +433,18 @@ export default function InboxScreen() {
               contentFit="cover"
             />
 
-            {/* Tag badge - top right */}
+            {/* Tag badge - tap to edit tags */}
             <View style={styles.tagContainer}>
-              <View style={styles.tagBadge}>
+              <Pressable style={styles.tagBadge} onPress={openTagPicker} hitSlop={12}>
                 <Text style={styles.tagHash}>#</Text>
                 <Text style={styles.tagText}>
                   {currentAsset.tags?.[0]?.toUpperCase() || 'SCREENSHOT'}
                 </Text>
-              </View>
+                {(currentAsset.tags?.length ?? 0) > 1 && (
+                  <Text style={styles.tagCount}>+{(currentAsset.tags?.length ?? 1) - 1}</Text>
+                )}
+                <Ionicons name="pencil" size={9} color={colors.textMuted} style={{ marginLeft: 3 }} />
+              </Pressable>
             </View>
 
             {/* Bottom gradient overlay */}
@@ -483,6 +512,32 @@ export default function InboxScreen() {
         <View style={styles.swipeDivider} />
         <Text style={[styles.swipeHint, { color: colors.keep }]}>Swipe Right to Keep</Text>
       </View>
+
+      {/* Tag picker — tap the tag badge to open */}
+      <Modal visible={tagPickerVisible} transparent animationType="slide" onRequestClose={() => setTagPickerVisible(false)}>
+        <Pressable style={styles.tagPickerOverlay} onPress={() => setTagPickerVisible(false)} />
+        <View style={styles.tagPickerSheet}>
+          <Text style={styles.tagPickerTitle}>Edit Tags</Text>
+          <Text style={styles.tagPickerHint}>Tap tags to toggle. Changes apply immediately.</Text>
+          <ScrollView contentContainerStyle={styles.tagPickerGrid} showsVerticalScrollIndicator={false}>
+            {allTags.map(tag => {
+              const active = tagPickerSelected.includes(tag)
+              return (
+                <Pressable
+                  key={tag}
+                  style={[styles.tagChip, active && { backgroundColor: getTagColor(tag), borderColor: getTagColor(tag) }]}
+                  onPress={() => setTagPickerSelected(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag])}
+                >
+                  <Text style={[styles.tagChipText, active && styles.tagChipTextActive]}>#{tag}</Text>
+                </Pressable>
+              )
+            })}
+          </ScrollView>
+          <Pressable style={styles.tagPickerDone} onPress={saveTagPicker}>
+            <Text style={styles.tagPickerDoneText}>Done</Text>
+          </Pressable>
+        </View>
+      </Modal>
     </View>
   )
 }
@@ -834,5 +889,72 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     maxWidth: 320,
+  },
+  tagCount: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.textMuted,
+    marginLeft: 2,
+  },
+  tagPickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+  },
+  tagPickerSheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.xl,
+    paddingBottom: 40,
+    maxHeight: '60%',
+  },
+  tagPickerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    fontFamily: fonts.display,
+    marginBottom: spacing.xs,
+  },
+  tagPickerHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginBottom: spacing.md,
+  },
+  tagPickerGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  tagChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.full,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: colors.surfaceHighlight,
+  },
+  tagChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tagChipTextActive: {
+    color: '#fff',
+  },
+  tagPickerDone: {
+    backgroundColor: colors.primary,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    marginTop: spacing.sm,
+  },
+  tagPickerDoneText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: colors.background,
+    fontFamily: fonts.display,
   },
 })

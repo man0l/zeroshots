@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { Platform, AppState, type AppStateStatus } from 'react-native'
 import * as MediaLibrary from 'expo-media-library'
 import * as FileSystem from 'expo-file-system/legacy'
+import type { EventSubscription } from 'expo-modules-core'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
 import { getCachedTags, setCachedTags } from '../features/screenshot-inbox/classificationCache'
 import { logMlClassification } from '../features/analytics/mlLogs'
@@ -86,6 +87,10 @@ export function useGallery() {
     : MediaLibrary.usePermissions()
   const [error, setError] = useState<Error | null>(null)
   const classificationRunIdRef = useRef(0)
+  const assetsRef = useRef<ClassifiedAsset[]>([])
+
+  // Keep a ref in sync so callbacks don't need assets as a dep (avoids stale-closure issues)
+  useEffect(() => { assetsRef.current = assets }, [assets])
 
   useEffect(() => {
     if (Platform.OS === 'web') {
@@ -192,6 +197,24 @@ export function useGallery() {
       }
     })
     return () => subscription.remove()
+  }, [permissionStatus?.granted, refreshFirstBatchPreservingPagination])
+
+  // Bug fix: screenshots taken while the app is in the foreground (hardware button) never
+  // trigger an AppState transition, so the listener above misses them. MediaLibrary.addListener
+  // fires on any media-library change regardless of app state.
+  useEffect(() => {
+    if (Platform.OS === 'web' || !permissionStatus?.granted) return
+    const debounceRef = { timer: null as ReturnType<typeof setTimeout> | null }
+    const sub: EventSubscription = MediaLibrary.addListener(() => {
+      if (debounceRef.timer) clearTimeout(debounceRef.timer)
+      debounceRef.timer = setTimeout(() => {
+        refreshFirstBatchPreservingPagination()
+      }, 800)
+    })
+    return () => {
+      sub.remove()
+      if (debounceRef.timer) clearTimeout(debounceRef.timer)
+    }
   }, [permissionStatus?.granted, refreshFirstBatchPreservingPagination])
 
   const loadScreenshots = useCallback(async () => {
@@ -320,6 +343,51 @@ export function useGallery() {
     return assets.filter(asset => asset.tags?.includes(tag))
   }, [assets])
 
+  /** Persist updated tags for an asset and reflect the change in gallery state. */
+  const updateAssetTags = useCallback(async (assetId: string, tags: string[]) => {
+    setAssets(prev => prev.map(a => a.id === assetId ? { ...a, tags } : a))
+    await setCachedTags({ [assetId]: tags })
+  }, [])
+
+  /**
+   * Load any kept asset IDs that are not yet in the gallery (e.g. older photos beyond
+   * the initial 150-asset batch). Called by the Vault's "Kept" filter so users see all
+   * kept screenshots even if they pre-date the loaded window.
+   */
+  const loadKeptAssets = useCallback(async (keptIds: string[]) => {
+    if (Platform.OS === 'web' || keptIds.length === 0) return
+    const loadedIds = new Set(assetsRef.current.map(a => a.id))
+    const unloaded = keptIds.filter(id => !loadedIds.has(id))
+    if (unloaded.length === 0) return
+    const loaded: ClassifiedAsset[] = []
+    for (const id of unloaded) {
+      try {
+        const info = await MediaLibrary.getAssetInfoAsync(id)
+        if (!info) continue
+        const size = await fetchAssetSize(info)
+        const cached = await getCachedTags([id])
+        loaded.push({
+          id: info.id,
+          uri: info.uri ?? info.localUri ?? '',
+          width: info.width,
+          height: info.height,
+          creationTime: info.creationTime,
+          size,
+          filename: info.filename ?? 'unknown.jpg',
+          tags: cached[id] ?? ['screenshot'],
+        })
+      } catch {
+        // Asset may have been deleted from the device; skip silently
+      }
+    }
+    if (loaded.length > 0) {
+      setAssets(prev => {
+        const existingIds = new Set(prev.map(a => a.id))
+        return [...prev, ...loaded.filter(a => !existingIds.has(a.id))]
+      })
+    }
+  }, [])
+
   // Classify the next batch of untagged assets (used by Vault infinite scroll).
   const classifyNextBatch = useCallback(async () => {
     const { aiEnabled } = useSettingsStore.getState()
@@ -354,6 +422,8 @@ export function useGallery() {
     getUniqueTags,
     filterByTag,
     classifyNextBatch,
+    updateAssetTags,
+    loadKeptAssets,
   }
 }
 
