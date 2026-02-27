@@ -20,6 +20,7 @@ import { events } from '../../src/features/analytics/events'
 import { colors, fonts, spacing, radii, shadows, swipeThresholds } from '../../src/lib/theme'
 import { getTagColor, classifyAssets } from '../../src/features/screenshot-inbox/classifyAssets'
 import { setCachedTags } from '../../src/features/screenshot-inbox/classificationCache'
+import { logMlClassification } from '../../src/features/analytics/mlLogs'
 import { useRouter } from 'expo-router'
 import { useAuthStore } from '../../src/state/auth.store'
 import { saveSessionToSupabase } from '../../src/features/cleanup-session/saveSession'
@@ -136,6 +137,15 @@ export default function InboxScreen() {
           const [classified] = await classifyAssets([asset])
           if (classified?.tags?.length) {
             await setCachedTags({ [classified.id]: classified.tags })
+            if (classified.rawLabels !== undefined) {
+              void logMlClassification({
+                source: Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit',
+                rawLabels: classified.rawLabels,
+                tags: classified.tags,
+                filename: classified.filename,
+                createdAt: new Date(classified.creationTime).toISOString(),
+              })
+            }
           }
         } catch (e) {
           if (__DEV__) {

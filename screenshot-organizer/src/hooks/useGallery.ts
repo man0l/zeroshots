@@ -4,6 +4,7 @@ import * as MediaLibrary from 'expo-media-library'
 import * as FileSystem from 'expo-file-system/legacy'
 import { classifyAssets, ClassifiedAsset } from '../features/screenshot-inbox/classifyAssets'
 import { getCachedTags, setCachedTags } from '../features/screenshot-inbox/classificationCache'
+import { logMlClassification } from '../features/analytics/mlLogs'
 import { useSettingsStore } from '../state/settings.store'
 import { useEntitlementStore } from '../state/entitlement.store'
 
@@ -116,6 +117,22 @@ export function useGallery() {
         if (c.tags?.length) updates[c.id] = c.tags
       }
       await setCachedTags(updates)
+
+      // Log ML events AFTER cache is persisted. This prevents re-logging on crash-before-cache scenarios:
+      // if the app dies after logging but before caching, the next session re-classifies and re-logs (dup).
+      // With cache saved first, next session finds the cached result and skips classification entirely.
+      const source = Platform.OS === 'ios' ? 'ios_vision' : 'android_mlkit'
+      for (const c of classified) {
+        if (c.rawLabels !== undefined) {
+          void logMlClassification({
+            source,
+            rawLabels: c.rawLabels,
+            tags: c.tags ?? [],
+            filename: c.filename,
+            createdAt: new Date(c.creationTime).toISOString(),
+          })
+        }
+      }
 
       setAssets((prev) =>
         prev.map((asset) => {

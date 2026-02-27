@@ -48,7 +48,7 @@ serve(async (req) => {
         'apikey': serviceKey,
         'Content-Profile': SCHEMA,
         'Accept-Profile': SCHEMA,
-        'Prefer': 'return=minimal',
+        'Prefer': 'return=minimal,resolution=ignore-duplicates',
       },
       body: JSON.stringify(formattedEvents),
     })
