@@ -69,7 +69,7 @@ export default function LandingPage() {
               href="#cta"
               className="hidden sm:flex items-center justify-center rounded-lg bg-primary px-5 py-2 text-sm font-bold text-background-dark hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)]"
             >
-              Coming Soon
+              Get Early Access
             </a>
             <button
               type="button"
@@ -95,41 +95,42 @@ export default function LandingPage() {
                 Launching Soon
               </div>
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.15] tracking-tight text-white">
-                A cleaner camera roll,{" "}
-                <span className="text-primary">one swipe</span> at a time.
+                Delete 200 screenshots.{" "}
+                <span className="text-primary">Five minutes.</span> Done.
               </h1>
               <p className="text-base sm:text-lg leading-relaxed text-slate-400 font-body">
-                Sort your screenshot chaos with &quot;The Stack&quot; and manage your
-                library with &quot;The Vault&quot;. Stop scrolling through thousands of
-                screenshots. Start organizing with intention.
+                ZeroShots turns your screenshot backlog into a fast, satisfying
+                swipe session — and tells you exactly how much space you freed.
+                No more scrolling past screenshots you&apos;ll never look at again.
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mt-4">
                 <a
                   href="#cta"
                   className="flex h-12 items-center justify-center rounded-lg bg-primary px-8 text-base font-bold text-background-dark hover:bg-primary/90 shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all"
                 >
-                  Subscribe for Early Access
+                  Claim Free Pro — 160 Spots Left →
                 </a>
               </div>
+              <p className="text-xs text-slate-500 -mt-2">No spam. Unsubscribe anytime.</p>
             </div>
 
-            {/* Phone mockups - hidden on small screens, single centered phone on md */}
-            <div className="relative w-full min-h-[320px] sm:min-h-[420px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
+            {/* Phone mockups */}
+            <div className="relative w-full h-[500px] sm:h-[580px] lg:h-[660px] flex items-center justify-center">
               <div className="relative z-20 flex items-center justify-center w-full h-full">
-                {/* Right phone - Session Recap (hidden on mobile) */}
-                <div className="hidden lg:block absolute right-0 top-20 w-[280px] h-[580px] bg-background-dark rounded-[3rem] border-8 border-slate-800 shadow-2xl transform rotate-6 scale-90 z-10 overflow-hidden opacity-90">
+                {/* Right phone - Session Recap (desktop only) */}
+                <div className="hidden lg:block absolute right-0 top-10 w-[260px] h-[540px] bg-background-dark rounded-[3rem] border-8 border-slate-800 shadow-2xl transform rotate-6 z-10 overflow-hidden opacity-90">
                   <div className="w-full h-full relative">
                     <Image
                       src="/images/recap.png"
                       alt="Session Recap - Storage Reclaimed 142 MB"
                       fill
                       className="object-cover object-top"
-                      sizes="280px"
+                      sizes="260px"
                     />
                   </div>
                 </div>
-                {/* Left / center phone - The Stack (main) */}
-                <div className="absolute left-1/2 -translate-x-1/2 top-4 sm:top-10 w-[240px] h-[480px] sm:w-[260px] sm:h-[520px] lg:left-4 lg:translate-x-0 lg:top-10 lg:w-[300px] lg:h-[600px] bg-background-dark rounded-[2.5rem] sm:rounded-[3rem] border-4 sm:border-8 border-slate-800 mockup-shadow transform lg:-rotate-3 z-30 overflow-hidden">
+                {/* Main phone - The Stack */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-6 w-[220px] h-[440px] sm:w-[260px] sm:h-[520px] lg:left-8 lg:translate-x-0 lg:top-8 lg:w-[300px] lg:h-[600px] bg-background-dark rounded-[2.5rem] sm:rounded-[3rem] border-4 sm:border-8 border-slate-800 mockup-shadow transform lg:-rotate-3 z-30 overflow-hidden">
                   <div className="w-full h-full relative">
                     <Image
                       src="/images/stack.png"
@@ -158,8 +159,8 @@ export default function LandingPage() {
                 From chaos to clarity
               </h3>
               <p className="mt-3 sm:mt-4 text-slate-400 max-w-2xl mx-auto font-body text-sm sm:text-base">
-                See how AI transforms your cluttered camera roll into a clean
-                start in seconds.
+                The average iPhone has 800+ unreviewed screenshots. Here&apos;s
+                what happens when you actually deal with them.
               </p>
             </div>
             <div className="grid md:grid-cols-2 gap-10 sm:gap-8 lg:gap-16 items-center justify-items-center">
@@ -267,10 +268,10 @@ export default function LandingPage() {
                 <div className="w-12 h-12 rounded-lg bg-primary/20 text-primary flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <span className="material-symbols-outlined text-3xl">swipe</span>
                 </div>
-                <h3 className="text-xl font-bold text-white">Tactile Triage</h3>
+                <h3 className="text-xl font-bold text-white">Swipe 100 screenshots in 4 minutes</h3>
                 <p className="text-slate-400 font-body leading-relaxed mb-4">
-                  Swipe left to delete, right to keep. Our Tinder-style interface
-                  makes cleaning your gallery actually fun and incredibly fast.
+                  Left to delete, right to keep. The fastest way to triage your
+                  camera roll — no folders, no labels, no thinking required.
                 </p>
               </div>
               <div className="glass-card p-0 rounded-2xl flex flex-col hover:bg-slate-800/60 transition-colors group overflow-hidden relative">
@@ -281,11 +282,11 @@ export default function LandingPage() {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    Instant Results
+                    Watch your storage grow in real time
                   </h3>
                   <p className="text-slate-400 font-body leading-relaxed text-sm">
-                    Track your progress in real-time. AI tags only—see storage
-                    reclaimed and items processed after every session.
+                    Every swipe shows MB reclaimed instantly. Your session recap
+                    keeps score so the satisfaction never gets old.
                   </p>
                 </div>
                 <div className="mt-6 mx-auto w-3/4 bg-background-dark rounded-t-xl border-t border-x border-slate-700 p-4 pb-0 opacity-80 group-hover:opacity-100 transition-opacity">
@@ -307,11 +308,11 @@ export default function LandingPage() {
                     </span>
                   </div>
                   <h3 className="text-xl font-bold text-white mb-2">
-                    Reclaim Your Space
+                    Bulk-delete a month of junk in one tap
                   </h3>
                   <p className="text-slate-400 font-body leading-relaxed text-sm">
-                    Manage &quot;The Vault&quot;. Use multi-select to bulk delete
-                    unwanted screenshots—identified by AI tags only.
+                    Browse your full library, select everything you don&apos;t need,
+                    and delete it all at once. Your phone. Finally under control.
                   </p>
                 </div>
                 <div className="mt-6 mx-auto w-full h-32 relative opacity-60 group-hover:opacity-100 transition-opacity">
@@ -454,53 +455,102 @@ export default function LandingPage() {
 
           <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
             <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary mb-4 sm:mb-6 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
-              Coming Soon
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              340 of 500 spots claimed
             </div>
             <h2
               id="coming-soon-heading"
               className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-3 sm:mb-4 leading-tight"
             >
-              ZeroShots is Coming to Your Mobile Device.
+              Get Pro free — before it costs <span className="line-through text-slate-500">$4.99</span><span className="text-primary"> $0.</span>
             </h2>
-            <p className="text-base sm:text-lg text-slate-400 mb-6 sm:mb-8 font-body">
-              Get notified when the app launches. Subscribe below for early
-              access.
+            <p className="text-base sm:text-lg text-slate-400 mb-5 font-body">
+              The first 500 subscribers unlock <span className="text-white font-semibold">lifetime Pro access</span> at no cost.
+              160 spots left. Drop your email and we&apos;ll notify you the moment ZeroShots goes live.
             </p>
 
-            {/* App Store badges */}
-            <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-10">
-              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
-                Coming Summer 2026
+            {/* Scarcity progress bar */}
+            <div className="w-full max-w-md mx-auto mb-6 sm:mb-8">
+              <div className="flex justify-between text-xs text-slate-500 mb-1.5">
+                <span>340 claimed</span>
+                <span className="text-primary font-semibold">160 spots left</span>
+              </div>
+              <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                <div className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full" style={{ width: "68%" }} />
+              </div>
+            </div>
+
+            {/* Email signup — primary conversion */}
+            <form
+              onSubmit={handleSubmit}
+              className="flex flex-col sm:flex-row gap-3 w-full max-w-md mx-auto"
+            >
+              <input
+                type="email"
+                placeholder="your@email.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-4 sm:px-5 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base min-h-[48px]"
+                aria-label="Email address"
+              />
+              <button
+                type="submit"
+                disabled={status === "loading"}
+                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-6 py-3.5 transition-colors whitespace-nowrap disabled:opacity-70 shadow-[0_0_15px_rgba(56,189,248,0.3)] min-h-[48px]"
+              >
+                {status === "loading" ? "Joining…" : "Claim Free Pro →"}
+              </button>
+            </form>
+            <p className="mt-3 text-xs text-slate-500">
+              No spam. Unsubscribe anytime.
+            </p>
+            {status === "success" && (
+              <p className="mt-4 text-emerald-400 font-medium">
+                You&apos;re in. We&apos;ll notify you at launch — check your inbox.
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+            )}
+            {status === "error" && error && (
+              <p className="mt-4 text-rose-400 font-medium">{error}</p>
+            )}
+
+            {/* App Store badges — trust signals, not primary CTA */}
+            <div className="flex flex-col items-center gap-3 mt-10 sm:mt-12">
+              <p className="text-xs font-medium text-slate-600 uppercase tracking-wider">
+                Coming to
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 opacity-60">
                 <a
                   href="https://apps.apple.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block h-[48px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden opacity-95 hover:opacity-100 transition-opacity"
+                  className="inline-block h-[40px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
                   aria-label="Download on the App Store"
                 >
                   <img
                     src="/images/Pre-order_on_the_App_Store_Badge_US-UK_RGB_wht_121217.svg"
                     alt="Download on the App Store"
-                    className="h-[48px] w-auto object-contain"
-                    width={160}
-                    height={48}
+                    className="h-[40px] w-auto object-contain"
+                    width={140}
+                    height={40}
                   />
                 </a>
                 <a
                   href="https://play.google.com"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-block h-[48px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden opacity-95 hover:opacity-100 transition-opacity"
+                  className="inline-block h-[40px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden hover:opacity-80 transition-opacity"
                   aria-label="Get it on Google Play"
                 >
                   <img
                     src="/images/PreRegisterOnGooglePlay_Badge_Web_color_english.png.png"
                     alt="Get it on Google Play"
-                    className="h-[48px] w-auto object-contain"
-                    width={180}
-                    height={48}
+                    className="h-[40px] w-auto object-contain"
+                    width={160}
+                    height={40}
                     onError={(e) => {
                       const t = e.currentTarget;
                       if (t.getAttribute("data-fallback") !== "1") {
@@ -513,40 +563,6 @@ export default function LandingPage() {
                 </a>
               </div>
             </div>
-
-            {/* Inline subscription */}
-            <form
-              onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-3 w-full max-w-md mx-auto"
-            >
-              <input
-                type="email"
-                placeholder="Email Address"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-4 sm:px-5 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base min-h-[48px]"
-                aria-label="Email address"
-              />
-              <button
-                type="submit"
-                disabled={status === "loading"}
-                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-6 py-3.5 transition-colors whitespace-nowrap disabled:opacity-70 shadow-[0_0_15px_rgba(56,189,248,0.3)] min-h-[48px]"
-              >
-                {status === "loading" ? "Subscribing…" : "Subscribe for Early Access"}
-              </button>
-            </form>
-            {status === "success" && (
-              <p className="mt-4 text-emerald-400 font-medium">
-                You&apos;re on the list. We&apos;ll notify you at launch.
-              </p>
-            )}
-            {status === "error" && error && (
-              <p className="mt-4 text-rose-400 font-medium">{error}</p>
-            )}
-            <p className="mt-4 text-xs text-slate-500">
-              No credit card required. Unsubscribe at any time.
-            </p>
           </div>
         </section>
       </main>
