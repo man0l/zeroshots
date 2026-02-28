@@ -42,7 +42,10 @@ export default function LibraryScreen() {
   const [tagPickerAssetId, setTagPickerAssetId] = useState<string | null>(null)
   const [tagPickerSelected, setTagPickerSelected] = useState<string[]>([])
 
-  const availableTags = React.useMemo(() => getUniqueTags(), [getUniqueTags])
+  const availableTags = React.useMemo(
+    () => Array.from(new Set([...getUniqueTags(), ...customTags])).sort(),
+    [getUniqueTags, customTags]
+  )
   const allAvailableTags = React.useMemo(
     () => Array.from(new Set([...VALID_TAGS, ...customTags])).sort(),
     [customTags]
