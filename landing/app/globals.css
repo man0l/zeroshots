@@ -48,3 +48,12 @@
 .error {
   color: #ef4444;
 }
+
+/* Mobile: ensure touch targets and no horizontal overflow */
+@media (max-width: 640px) {
+  input,
+  button,
+  [role="button"] {
+    min-height: 44px;
+  }
+}

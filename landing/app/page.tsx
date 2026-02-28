@@ -33,7 +33,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="relative flex min-h-screen w-full flex-col">
+    <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
       {/* Background orbs */}
       <div className="fixed inset-0 z-0 pointer-events-none">
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/3" />
@@ -41,12 +41,12 @@ export default function LandingPage() {
       </div>
 
       <header className="sticky top-0 z-50 w-full backdrop-blur-md bg-background-dark/80 border-b border-slate-800">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6 lg:px-8">
+        <div className="mx-auto flex h-14 sm:h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/20 text-primary">
               <span className="material-symbols-outlined text-2xl">grid_view</span>
             </div>
-            <span className="text-lg font-bold tracking-tight text-white">
+            <span className="text-base sm:text-lg font-bold tracking-tight text-white truncate">
               zeroshots.app
             </span>
           </div>
@@ -84,9 +84,9 @@ export default function LandingPage() {
 
       <main className="z-10 flex-1">
         {/* Hero */}
-        <section className="relative px-6 py-16 lg:px-8 lg:py-24 max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="flex flex-col gap-6 max-w-2xl">
+        <section className="relative px-4 sm:px-6 py-10 sm:py-16 lg:px-8 lg:py-24 max-w-7xl mx-auto overflow-hidden">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="flex flex-col gap-4 sm:gap-6 max-w-2xl min-w-0">
               <div className="inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-xs font-bold text-primary">
                 <span className="relative flex h-2 w-2">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
@@ -94,11 +94,11 @@ export default function LandingPage() {
                 </span>
                 Launching Soon
               </div>
-              <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-white sm:text-6xl md:text-7xl">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-black leading-[1.15] tracking-tight text-white">
                 A cleaner camera roll,{" "}
                 <span className="text-primary">one swipe</span> at a time.
               </h1>
-              <p className="text-lg leading-relaxed text-slate-400 font-body">
+              <p className="text-base sm:text-lg leading-relaxed text-slate-400 font-body">
                 Sort your screenshot chaos with &quot;The Stack&quot; and manage your
                 library with &quot;The Vault&quot;. Stop scrolling through thousands of
                 screenshots. Start organizing with intention.
@@ -113,11 +113,11 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Phone mockups with real screenshots */}
-            <div className="relative w-full h-[600px] flex items-center justify-center">
+            {/* Phone mockups - hidden on small screens, single centered phone on md */}
+            <div className="relative w-full min-h-[320px] sm:min-h-[420px] lg:min-h-[600px] flex items-center justify-center overflow-hidden">
               <div className="relative z-20 flex items-center justify-center w-full h-full">
-                {/* Right phone - Session Recap */}
-                <div className="absolute right-0 top-20 w-[280px] h-[580px] bg-background-dark rounded-[3rem] border-8 border-slate-800 shadow-2xl transform rotate-6 scale-90 z-10 overflow-hidden opacity-90">
+                {/* Right phone - Session Recap (hidden on mobile) */}
+                <div className="hidden lg:block absolute right-0 top-20 w-[280px] h-[580px] bg-background-dark rounded-[3rem] border-8 border-slate-800 shadow-2xl transform rotate-6 scale-90 z-10 overflow-hidden opacity-90">
                   <div className="w-full h-full relative">
                     <Image
                       src="/images/recap.png"
@@ -128,46 +128,46 @@ export default function LandingPage() {
                     />
                   </div>
                 </div>
-                {/* Left phone - The Stack (main) */}
-                <div className="absolute left-4 top-10 w-[300px] h-[600px] bg-background-dark rounded-[3rem] border-8 border-slate-800 mockup-shadow transform -rotate-3 z-30 overflow-hidden">
+                {/* Left / center phone - The Stack (main) */}
+                <div className="absolute left-1/2 -translate-x-1/2 top-4 sm:top-10 w-[240px] h-[480px] sm:w-[260px] sm:h-[520px] lg:left-4 lg:translate-x-0 lg:top-10 lg:w-[300px] lg:h-[600px] bg-background-dark rounded-[2.5rem] sm:rounded-[3rem] border-4 sm:border-8 border-slate-800 mockup-shadow transform lg:-rotate-3 z-30 overflow-hidden">
                   <div className="w-full h-full relative">
                     <Image
                       src="/images/stack.png"
                       alt="The Stack - swipe to triage screenshots"
                       fill
                       className="object-cover object-top"
-                      sizes="300px"
+                      sizes="(max-width: 1024px) 260px, 300px"
                       priority
                     />
                   </div>
                 </div>
               </div>
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[80px] z-0" />
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] lg:w-[500px] h-[300px] sm:h-[400px] lg:h-[500px] bg-primary/20 rounded-full blur-[80px] z-0" />
             </div>
           </div>
         </section>
 
         {/* The Problem - Before / After */}
-        <section className="py-20 bg-[#15232b] border-y border-slate-800">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="text-center mb-16">
+        <section className="py-12 sm:py-20 bg-[#15232b] border-y border-slate-800 overflow-hidden">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10 sm:mb-16">
               <h2 className="text-primary font-bold tracking-wider uppercase text-sm mb-3">
                 The Problem
               </h2>
-              <h3 className="text-3xl md:text-4xl font-bold text-white">
+              <h3 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                 From chaos to clarity
               </h3>
-              <p className="mt-4 text-slate-400 max-w-2xl mx-auto font-body">
+              <p className="mt-3 sm:mt-4 text-slate-400 max-w-2xl mx-auto font-body text-sm sm:text-base">
                 See how AI transforms your cluttered camera roll into a clean
                 start in seconds.
               </p>
             </div>
-            <div className="grid md:grid-cols-2 gap-8 lg:gap-16 items-center">
-              <div className="group relative flex justify-center">
+            <div className="grid md:grid-cols-2 gap-10 sm:gap-8 lg:gap-16 items-center justify-items-center">
+              <div className="group relative flex flex-col items-center">
                 <div className="absolute top-0 right-0 z-10 bg-rose-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm transform translate-x-2 -translate-y-2">
                   BEFORE
                 </div>
-                <div className="relative w-[300px] h-[600px] bg-background-dark rounded-[3rem] border-4 border-slate-700 shadow-xl overflow-hidden">
+                <div className="relative w-[260px] h-[520px] sm:w-[300px] sm:h-[600px] bg-background-dark rounded-[2.5rem] sm:rounded-[3rem] border-4 border-slate-700 shadow-xl overflow-hidden flex-shrink-0">
                   <div className="h-12 w-full bg-background-dark flex items-center justify-between px-6 pt-2">
                     <span className="text-white text-xs font-bold">9:41</span>
                     <div className="flex gap-1">
@@ -224,11 +224,11 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              <div className="group relative flex justify-center">
+              <div className="group relative flex flex-col items-center">
                 <div className="absolute top-0 right-0 z-10 bg-emerald-500/90 text-white text-xs font-bold px-3 py-1 rounded-full backdrop-blur-sm transform translate-x-2 -translate-y-2">
                   AFTER
                 </div>
-                <div className="relative w-[300px] h-[600px] bg-background-dark rounded-[3rem] border-4 border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.1)] overflow-hidden">
+                <div className="relative w-[260px] h-[520px] sm:w-[300px] sm:h-[600px] bg-background-dark rounded-[2.5rem] sm:rounded-[3rem] border-4 border-emerald-500/30 shadow-[0_0_40px_rgba(16,185,129,0.1)] overflow-hidden flex-shrink-0">
                   <div className="w-full h-full relative">
                     <Image
                       src="/images/recap.png"
@@ -254,15 +254,15 @@ export default function LandingPage() {
         </section>
 
         {/* Features */}
-        <section className="py-24 relative overflow-hidden" id="features">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="mb-16">
-              <h2 className="text-4xl font-bold text-white mb-6">
+        <section className="py-12 sm:py-24 relative overflow-hidden" id="features">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mb-10 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-6">
                 Designed for <span className="text-primary">speed</span>
               </h2>
               <div className="h-1 w-20 bg-primary rounded-full" />
             </div>
-            <div className="grid md:grid-cols-3 gap-6">
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
               <div className="glass-card p-8 rounded-2xl flex flex-col gap-4 hover:bg-slate-800/60 transition-colors group">
                 <div className="w-12 h-12 rounded-lg bg-primary/20 text-primary flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                   <span className="material-symbols-outlined text-3xl">swipe</span>
@@ -340,18 +340,18 @@ export default function LandingPage() {
 
         {/* How it works */}
         <section
-          className="py-24 bg-[#15232b]"
+          className="py-12 sm:py-24 bg-[#15232b] overflow-hidden"
           id="how-it-works"
         >
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-bold text-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-10 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-white">
                 Three steps to freedom
               </h2>
             </div>
             <div className="relative">
               <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-slate-700 -translate-y-1/2 z-0" />
-              <div className="grid md:grid-cols-3 gap-12 relative z-10">
+              <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-8 sm:gap-12 relative z-10">
                 <div className="flex flex-col items-center text-center gap-6">
                   <div className="w-20 h-20 rounded-full bg-background-dark border-4 border-slate-700 flex items-center justify-center shadow-lg">
                     <span className="material-symbols-outlined text-3xl text-slate-400">
@@ -443,36 +443,36 @@ export default function LandingPage() {
 
         {/* Coming Soon */}
         <section
-          className="py-24 relative overflow-hidden"
+          className="py-12 sm:py-24 relative overflow-hidden"
           id="cta"
           aria-labelledby="coming-soon-heading"
         >
           {/* Subtle glow */}
           <div className="absolute inset-0 pointer-events-none">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300px] sm:w-[400px] h-[300px] sm:h-[400px] bg-primary/10 rounded-full blur-[100px]" />
           </div>
 
-          <div className="relative max-w-3xl mx-auto px-6 text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary mb-6 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
+          <div className="relative max-w-3xl mx-auto px-4 sm:px-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary mb-4 sm:mb-6 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
               Coming Soon
             </div>
             <h2
               id="coming-soon-heading"
-              className="text-4xl md:text-5xl font-black text-white mb-4"
+              className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-white mb-3 sm:mb-4 leading-tight"
             >
               ZeroShots is Coming to Your Mobile Device.
             </h2>
-            <p className="text-lg text-slate-400 mb-8 font-body">
+            <p className="text-base sm:text-lg text-slate-400 mb-6 sm:mb-8 font-body">
               Get notified when the app launches. Subscribe below for early
               access.
             </p>
 
             {/* App Store badges */}
-            <div className="flex flex-col items-center gap-4 mb-10">
+            <div className="flex flex-col items-center gap-3 sm:gap-4 mb-8 sm:mb-10">
               <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
                 Coming Summer 2026
               </p>
-              <div className="flex flex-wrap items-center justify-center gap-6">
+              <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
                 <a
                   href="https://apps.apple.com"
                   target="_blank"
@@ -517,7 +517,7 @@ export default function LandingPage() {
             {/* Inline subscription */}
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
+              className="flex flex-col sm:flex-row gap-3 w-full max-w-md mx-auto"
             >
               <input
                 type="email"
@@ -525,13 +525,13 @@ export default function LandingPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-5 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base"
+                className="flex-1 min-w-0 bg-slate-900 border border-slate-700 rounded-lg px-4 sm:px-5 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base min-h-[48px]"
                 aria-label="Email address"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-6 py-3.5 transition-colors whitespace-nowrap disabled:opacity-70 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
+                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-6 py-3.5 transition-colors whitespace-nowrap disabled:opacity-70 shadow-[0_0_15px_rgba(56,189,248,0.3)] min-h-[48px]"
               >
                 {status === "loading" ? "Subscribing…" : "Subscribe for Early Access"}
               </button>
@@ -551,8 +551,8 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-slate-800 bg-background-dark py-12 px-6">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+      <footer className="border-t border-slate-800 bg-background-dark py-8 sm:py-12 px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4 sm:gap-6 text-center md:text-left">
           <div className="flex items-center gap-2">
             <div className="size-6 text-slate-400">
               <svg
@@ -572,7 +572,7 @@ export default function LandingPage() {
               zeroshots.app © {new Date().getFullYear()}
             </span>
           </div>
-          <div className="flex gap-8">
+          <div className="flex flex-wrap justify-center md:justify-end gap-4 sm:gap-8">
             <a
               className="text-slate-500 hover:text-primary text-sm transition-colors"
               href="/privacy"

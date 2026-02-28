@@ -25,6 +25,19 @@ MAILER_API_ENDPOINT=https://your-mailer-service.example/subscribe
 
 On Vercel, set the same variables in the project settings. The API key never appears in the client bundle; it is only read inside the `/api/join` server route.
 
+### Mobile E2E tests (Playwright)
+
+Run the landing dev server, then in another terminal:
+
+```bash
+# With server already running on port 3000 (or 3001):
+PLAYWRIGHT_BASE_URL=http://localhost:3000 npm run test:e2e:mobile
+# Or let Playwright start the server (may use 3000):
+npm run test:e2e:mobile
+```
+
+Tests run at 393×851 and 375×667 viewports to check mobile responsiveness and no horizontal overflow.
+
 ### Deploying to Vercel
 
 1. Point a new Vercel project at the `landing` directory.

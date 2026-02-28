@@ -93,3 +93,4 @@ web-demo/.cache/
 coverage/
 *.lcov
 .claude/
+test-results/

@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:e2e": "playwright test",
+    "test:e2e:mobile": "playwright test --project=mobile --project=mobile-small"
   },
   "dependencies": {
     "next": "15.0.0-canary.69",
@@ -14,6 +16,7 @@
     "react-dom": "19.0.0-rc.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.2.1",
     "@types/node": "^25.3.2",
     "@types/react": "^19.2.14",
