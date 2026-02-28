@@ -496,7 +496,7 @@ export default function LandingPage() {
                   aria-label="Get it on Google Play"
                 >
                   <img
-                    src="/images/PreRegisterOnGooglePlay_Badge_Web_color_english.png"
+                    src="/images/PreRegisterOnGooglePlay_Badge_Web_color_english.png.png"
                     alt="Get it on Google Play"
                     className="h-[48px] w-auto object-contain"
                     width={180}
