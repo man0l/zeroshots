@@ -57,10 +57,10 @@ export default function InboxScreen() {
     endSession,
   } = useSessionStore()
   const { entitlement, deletesRemaining } = useEntitlementStore()
-  const { aiEnabled, customTags } = useSettingsStore()
+  const { aiEnabled, customTags, hiddenStaticTags } = useSettingsStore()
   const allTags = React.useMemo(
-    () => Array.from(new Set([...VALID_TAGS, ...customTags])).sort(),
-    [customTags]
+    () => [...VALID_TAGS.filter(t => !hiddenStaticTags.includes(t)), ...customTags].sort(),
+    [customTags, hiddenStaticTags]
   )
 
   const translateX = useSharedValue(0)

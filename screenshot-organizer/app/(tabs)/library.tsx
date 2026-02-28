@@ -37,18 +37,21 @@ export default function LibraryScreen() {
   const [activeFilter, setActiveFilter] = useState<FilterType>('all')
   const [activeTag, setActiveTag] = useState<string | null>(null)
   const keptIds = useKeptIdsStore(s => s.ids)
-  const { customTags } = useSettingsStore()
+  const { customTags, hiddenStaticTags } = useSettingsStore()
   // Tag picker state
   const [tagPickerAssetId, setTagPickerAssetId] = useState<string | null>(null)
   const [tagPickerSelected, setTagPickerSelected] = useState<string[]>([])
 
-  const availableTags = React.useMemo(
-    () => Array.from(new Set([...getUniqueTags(), ...customTags])).sort(),
-    [getUniqueTags, customTags]
-  )
+  const availableTags = React.useMemo(() => {
+    const assetTags = getUniqueTags()
+    const visibleStatic = VALID_TAGS.filter(
+      t => !hiddenStaticTags.includes(t) || assetTags.includes(t)
+    )
+    return Array.from(new Set([...assetTags, ...customTags, ...visibleStatic])).sort()
+  }, [getUniqueTags, customTags, hiddenStaticTags])
   const allAvailableTags = React.useMemo(
-    () => Array.from(new Set([...VALID_TAGS, ...customTags])).sort(),
-    [customTags]
+    () => [...VALID_TAGS.filter(t => !hiddenStaticTags.includes(t)), ...customTags].sort(),
+    [customTags, hiddenStaticTags]
   )
 
   // When switching to "kept" filter, ensure older kept assets are loaded

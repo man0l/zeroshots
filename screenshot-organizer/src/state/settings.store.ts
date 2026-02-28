@@ -10,11 +10,15 @@ interface SettingsState {
   mlLogsEnabled: boolean
   /** User-defined tag labels shown alongside VALID_TAGS in the tag picker and library filter. */
   customTags: string[]
+  /** Static tags the user has chosen to hide from the picker and filter bar. */
+  hiddenStaticTags: string[]
   setAiEnabled: (enabled: boolean) => void
   setAnalyticsEnabled: (enabled: boolean) => void
   setMlLogsEnabled: (enabled: boolean) => void
   addCustomTag: (tag: string) => void
   removeCustomTag: (tag: string) => void
+  hideStaticTag: (tag: string) => void
+  showStaticTag: (tag: string) => void
 }
 
 export const useSettingsStore = create<SettingsState>()(
@@ -26,6 +30,7 @@ export const useSettingsStore = create<SettingsState>()(
       // ML logs are OFF by default — explicit opt-in since they are stored server-side
       mlLogsEnabled: false,
       customTags: [],
+      hiddenStaticTags: [],
 
       setAiEnabled: (aiEnabled) => set({ aiEnabled }),
       setAnalyticsEnabled: (analyticsEnabled) => set({ analyticsEnabled }),
@@ -36,6 +41,8 @@ export const useSettingsStore = create<SettingsState>()(
         set((s) => ({ customTags: [...s.customTags, t] }))
       },
       removeCustomTag: (tag) => set((s) => ({ customTags: s.customTags.filter(t => t !== tag) })),
+      hideStaticTag: (tag) => set((s) => s.hiddenStaticTags.includes(tag) ? s : { hiddenStaticTags: [...s.hiddenStaticTags, tag] }),
+      showStaticTag: (tag) => set((s) => ({ hiddenStaticTags: s.hiddenStaticTags.filter(t => t !== tag) })),
     }),
     {
       name: STORAGE_KEY,

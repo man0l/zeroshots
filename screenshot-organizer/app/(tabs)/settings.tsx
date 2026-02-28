@@ -7,6 +7,7 @@ import * as FileSystem from 'expo-file-system/legacy'
 import { colors, spacing, radii } from '../../src/lib/theme'
 import { useEntitlementStore } from '../../src/state/entitlement.store'
 import { useSettingsStore } from '../../src/state/settings.store'
+import { VALID_TAGS } from '../../src/features/screenshot-inbox/onDeviceTagMapping'
 import { testOnDeviceLabeling } from '../../src/features/screenshot-inbox/classifyAssets'
 import { fetchTagSuggestions, type TagSuggestion } from '../../src/features/analytics/tagSuggestions'
 
@@ -16,7 +17,7 @@ export default function SettingsScreen() {
   const insets = useSafeAreaInsets()
   const router = useRouter()
   const { entitlement, deletesRemaining, setEntitlement } = useEntitlementStore()
-  const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled, customTags, addCustomTag, removeCustomTag } = useSettingsStore()
+  const { aiEnabled, setAiEnabled, mlLogsEnabled, setMlLogsEnabled, customTags, addCustomTag, removeCustomTag, hiddenStaticTags, hideStaticTag, showStaticTag } = useSettingsStore()
   const [newTagInput, setNewTagInput] = useState('')
   const [mlKitTestStatus, setMlKitTestStatus] = useState<string | null>(null)
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[] | null>(null)
@@ -271,6 +272,35 @@ export default function SettingsScreen() {
         </View>
       </View>
 
+      {/* Built-in Tags */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Built-in Tags</Text>
+        <View style={styles.card}>
+          <Text style={styles.aiSubLabel}>
+            Hidden tags won't appear in the tag picker or filter bar. Assets already tagged keep their tags.
+          </Text>
+          <View style={styles.builtInTagsGrid}>
+            {VALID_TAGS.map(tag => {
+              const hidden = hiddenStaticTags.includes(tag)
+              return (
+                <Pressable
+                  key={tag}
+                  style={[styles.builtInTagChip, hidden && styles.builtInTagChipHidden]}
+                  onPress={() => hidden ? showStaticTag(tag) : hideStaticTag(tag)}
+                  accessibilityRole="button"
+                  accessibilityLabel={hidden ? `Show tag ${tag}` : `Hide tag ${tag}`}
+                  accessibilityState={{ selected: !hidden }}
+                >
+                  <Text style={[styles.builtInTagChipText, hidden && styles.builtInTagChipTextHidden]}>
+                    {hidden ? '–' : '✓'} {tag}
+                  </Text>
+                </Pressable>
+              )
+            })}
+          </View>
+        </View>
+      </View>
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Debug</Text>
         <View style={styles.card}>
@@ -431,6 +461,33 @@ const styles = StyleSheet.create({
   },
   mlKitStatus: {
     fontSize: 14,
+    color: colors.textMuted,
+  },
+  builtInTagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  builtInTagChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs + 2,
+    borderRadius: radii.full,
+    backgroundColor: colors.primary,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  builtInTagChipHidden: {
+    backgroundColor: 'transparent',
+    borderColor: 'rgba(255,255,255,0.15)',
+  },
+  builtInTagChipText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: colors.background,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  builtInTagChipTextHidden: {
     color: colors.textMuted,
   },
   suggestionList: {
