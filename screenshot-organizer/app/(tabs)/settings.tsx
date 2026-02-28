@@ -21,17 +21,32 @@ export default function SettingsScreen() {
   const [mlKitTestStatus, setMlKitTestStatus] = useState<string | null>(null)
   const [tagSuggestions, setTagSuggestions] = useState<TagSuggestion[] | null>(null)
   const [tagSuggestionsLoading, setTagSuggestionsLoading] = useState(false)
+  const [tagSuggestionsError, setTagSuggestionsError] = useState<string | null>(null)
+
+  const loadTagSuggestions = React.useCallback(() => {
+    if (!mlLogsEnabled) return
+    setTagSuggestionsError(null)
+    setTagSuggestionsLoading(true)
+    fetchTagSuggestions({ minCount: 1, limit: 10 })
+      .then(({ data, error }) => {
+        if (error) {
+          setTagSuggestionsError(error.message || 'Could not load suggestions')
+          setTagSuggestions(null)
+        } else {
+          setTagSuggestions(data ?? [])
+        }
+      })
+      .finally(() => setTagSuggestionsLoading(false))
+  }, [mlLogsEnabled])
 
   useEffect(() => {
     if (!mlLogsEnabled) {
       setTagSuggestions(null)
+      setTagSuggestionsError(null)
       return
     }
-    setTagSuggestionsLoading(true)
-    fetchTagSuggestions({ limit: 10 })
-      .then(({ data }) => setTagSuggestions(data ?? []))
-      .finally(() => setTagSuggestionsLoading(false))
-  }, [mlLogsEnabled])
+    loadTagSuggestions()
+  }, [mlLogsEnabled, loadTagSuggestions])
 
   const runTestMlKit = async () => {
     setMlKitTestStatus('…')
@@ -65,7 +80,11 @@ export default function SettingsScreen() {
   }
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top + spacing.xl }]}>
+    <ScrollView
+      style={styles.scrollView}
+      contentContainerStyle={[styles.container, { paddingTop: insets.top + spacing.xl, paddingBottom: insets.bottom + spacing.xxl }]}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.title}>Settings</Text>
 
       <View style={styles.section}>
@@ -155,6 +174,10 @@ export default function SettingsScreen() {
               <Text style={styles.suggestedTagsLabel}>Suggested tags from your usage</Text>
               {tagSuggestionsLoading ? (
                 <Text style={styles.suggestedTagsMuted}>Loading…</Text>
+              ) : tagSuggestionsError ? (
+                <Pressable onPress={loadTagSuggestions} accessibilityRole="button" accessibilityLabel="Retry loading suggestions">
+                  <Text style={styles.suggestedTagsMuted}>{tagSuggestionsError}. Tap to retry.</Text>
+                </Pressable>
               ) : tagSuggestions && tagSuggestions.length > 0 ? (
                 <View style={styles.suggestionList}>
                   {tagSuggestions.map(s => (
@@ -282,14 +305,16 @@ export default function SettingsScreen() {
           )}
         </View>
       </View>
-    </View>
+    </ScrollView>
   )
 }
 
 const styles = StyleSheet.create({
-  container: {
+  scrollView: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  container: {
     paddingHorizontal: spacing.md,
   },
   title: {
