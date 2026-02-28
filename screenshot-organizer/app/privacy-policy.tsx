@@ -72,13 +72,18 @@ export default function PrivacyPolicyScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing.xxl }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.lastUpdated}>Last updated: February 26, 2026</Text>
+        <Text style={styles.lastUpdated}>Last updated: February 2026</Text>
 
-        <Section title="1. Introduction">
+        <Section title="1. Operator & Introduction">
           <Body>
-            Screenshot Organizer ("we", "our", or "us") is committed to protecting your privacy.
-            This policy explains exactly what data is processed when you use our app, under what
-            conditions data leaves your device, and your rights as a user.
+            zeroshots.app ("we", "our", or "us") is operated by a company registered in Bulgaria
+            with EIK (Unified Identification Code) 206373314. Full company name and registered
+            address: <InlineLink label="papagal.bg/eik/206373314/c3d6" url="https://papagal.bg/eik/206373314/c3d6" />.
+          </Body>
+          <Body>
+            We are committed to protecting your privacy. This policy explains exactly what data
+            is processed when you use our app, under what conditions data leaves your device,
+            and your rights as a user.
           </Body>
           <Body>
             We designed this app with a privacy-first approach: all photo scanning and AI
@@ -204,7 +209,7 @@ export default function PrivacyPolicyScreen() {
           </Bullet>
           <Body>
             To exercise any of these rights, contact us at{' '}
-            <InlineLink label="privacy@screenshotorganizer.app" url="mailto:privacy@screenshotorganizer.app" />.
+            <InlineLink label="privacy@zeroshots.app" url="mailto:privacy@zeroshots.app" />.
             We respond within 30 days.
           </Body>
         </Section>
@@ -252,7 +257,11 @@ export default function PrivacyPolicyScreen() {
             For privacy questions, data requests, or complaints:
           </Body>
           <Bullet>
-            Email: <InlineLink label="privacy@screenshotorganizer.app" url="mailto:privacy@screenshotorganizer.app" />
+            Operator: company with EIK 206373314. Full details:{' '}
+            <InlineLink label="papagal.bg/eik/206373314/c3d6" url="https://papagal.bg/eik/206373314/c3d6" />
+          </Bullet>
+          <Bullet>
+            Email: <InlineLink label="privacy@zeroshots.app" url="mailto:privacy@zeroshots.app" />
           </Bullet>
           <Bullet>
             Response time: within 30 days (GDPR-compliant)

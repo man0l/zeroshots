@@ -69,7 +69,7 @@ export default function LandingPage() {
               href="#cta"
               className="hidden sm:flex items-center justify-center rounded-lg bg-primary px-5 py-2 text-sm font-bold text-background-dark hover:bg-primary/90 transition-all shadow-[0_0_15px_rgba(56,189,248,0.3)]"
             >
-              Join Waitlist
+              Coming Soon
             </a>
             <button
               type="button"
@@ -92,7 +92,7 @@ export default function LandingPage() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
                 </span>
-                Waitlist Open v1.0
+                Launching Soon
               </div>
               <h1 className="text-5xl font-black leading-[1.1] tracking-tight text-white sm:text-6xl md:text-7xl">
                 A cleaner camera roll,{" "}
@@ -108,7 +108,7 @@ export default function LandingPage() {
                   href="#cta"
                   className="flex h-12 items-center justify-center rounded-lg bg-primary px-8 text-base font-bold text-background-dark hover:bg-primary/90 shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all"
                 >
-                  Get Early Access
+                  Subscribe for Early Access
                 </a>
               </div>
             </div>
@@ -441,39 +441,104 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* CTA */}
-        <section className="py-24 relative" id="cta">
-          <div className="max-w-3xl mx-auto px-6 text-center">
-            <h2 className="text-4xl md:text-5xl font-black text-white mb-6">
-              Ready for a fresh start?
+        {/* Coming Soon */}
+        <section
+          className="py-24 relative overflow-hidden"
+          id="cta"
+          aria-labelledby="coming-soon-heading"
+        >
+          {/* Subtle glow */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-primary/10 rounded-full blur-[100px]" />
+          </div>
+
+          <div className="relative max-w-3xl mx-auto px-6 text-center">
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-xs font-bold text-primary mb-6 shadow-[0_0_20px_rgba(56,189,248,0.2)]">
+              Coming Soon
+            </div>
+            <h2
+              id="coming-soon-heading"
+              className="text-4xl md:text-5xl font-black text-white mb-4"
+            >
+              ZeroShots is Coming to Your Mobile Device.
             </h2>
-            <p className="text-lg text-slate-400 mb-10 font-body">
-              Join thousands of users who have already reclaimed terabytes of
-              storage. It takes less than 2 minutes to get organized.
+            <p className="text-lg text-slate-400 mb-8 font-body">
+              Get notified when the app launches. Subscribe below for early
+              access.
             </p>
+
+            {/* App Store badges */}
+            <div className="flex flex-col items-center gap-4 mb-10">
+              <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">
+                Coming Summer 2026
+              </p>
+              <div className="flex flex-wrap items-center justify-center gap-6">
+                <a
+                  href="https://apps.apple.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block h-[48px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden opacity-95 hover:opacity-100 transition-opacity"
+                  aria-label="Download on the App Store"
+                >
+                  <img
+                    src="/images/Pre-order_on_the_App_Store_Badge_US-UK_RGB_wht_121217.svg"
+                    alt="Download on the App Store"
+                    className="h-[48px] w-auto object-contain"
+                    width={160}
+                    height={48}
+                  />
+                </a>
+                <a
+                  href="https://play.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block h-[48px] w-auto focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background-dark rounded-lg overflow-hidden opacity-95 hover:opacity-100 transition-opacity"
+                  aria-label="Get it on Google Play"
+                >
+                  <img
+                    src="/images/PreRegisterOnGooglePlay_Badge_Web_color_english.png"
+                    alt="Get it on Google Play"
+                    className="h-[48px] w-auto object-contain"
+                    width={180}
+                    height={48}
+                    onError={(e) => {
+                      const t = e.currentTarget;
+                      if (t.getAttribute("data-fallback") !== "1") {
+                        t.setAttribute("data-fallback", "1");
+                        t.src =
+                          "https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg";
+                      }
+                    }}
+                  />
+                </a>
+              </div>
+            </div>
+
+            {/* Inline subscription */}
             <form
               onSubmit={handleSubmit}
-              className="flex flex-col sm:flex-row gap-4 max-w-lg mx-auto"
+              className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
             >
               <input
                 type="email"
-                placeholder="Enter your email address"
+                placeholder="Email Address"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-6 py-4 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all"
+                className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-5 py-3.5 text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all text-base"
+                aria-label="Email address"
               />
               <button
                 type="submit"
                 disabled={status === "loading"}
-                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-8 py-4 transition-colors whitespace-nowrap disabled:opacity-70"
+                className="bg-primary hover:bg-sky-400 text-background-dark font-bold rounded-lg px-6 py-3.5 transition-colors whitespace-nowrap disabled:opacity-70 shadow-[0_0_15px_rgba(56,189,248,0.3)]"
               >
-                {status === "loading" ? "Joining…" : "Get Early Access"}
+                {status === "loading" ? "Subscribing…" : "Subscribe for Early Access"}
               </button>
             </form>
             {status === "success" && (
               <p className="mt-4 text-emerald-400 font-medium">
-                You&apos;re on the list. Talk soon.
+                You&apos;re on the list. We&apos;ll notify you at launch.
               </p>
             )}
             {status === "error" && error && (
@@ -510,13 +575,13 @@ export default function LandingPage() {
           <div className="flex gap-8">
             <a
               className="text-slate-500 hover:text-primary text-sm transition-colors"
-              href="#"
+              href="/privacy"
             >
               Privacy
             </a>
             <a
               className="text-slate-500 hover:text-primary text-sm transition-colors"
-              href="#"
+              href="/terms"
             >
               Terms
             </a>
