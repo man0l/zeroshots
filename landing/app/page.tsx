@@ -108,7 +108,7 @@ export default function LandingPage() {
                   href="#cta"
                   className="flex h-12 items-center justify-center rounded-lg bg-primary px-8 text-base font-bold text-background-dark hover:bg-primary/90 shadow-[0_0_20px_rgba(56,189,248,0.4)] transition-all"
                 >
-                  Claim Free Pro — 160 Spots Left →
+                  Claim Free Pro — 137 Spots Left →
                 </a>
               </div>
               <p className="text-xs text-slate-500 -mt-2">No spam. Unsubscribe anytime.</p>
@@ -459,7 +459,7 @@ export default function LandingPage() {
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
               </span>
-              340 of 500 spots claimed
+              363 of 500 spots claimed
             </div>
             <h2
               id="coming-soon-heading"
@@ -469,17 +469,17 @@ export default function LandingPage() {
             </h2>
             <p className="text-base sm:text-lg text-slate-400 mb-5 font-body">
               The first 500 subscribers unlock <span className="text-white font-semibold">lifetime Pro access</span> at no cost.
-              160 spots left. Drop your email and we&apos;ll notify you the moment ZeroShots goes live.
+              137 spots left. Drop your email and we&apos;ll notify you the moment ZeroShots goes live.
             </p>
 
             {/* Scarcity progress bar */}
             <div className="w-full max-w-md mx-auto mb-6 sm:mb-8">
               <div className="flex justify-between text-xs text-slate-500 mb-1.5">
-                <span>340 claimed</span>
-                <span className="text-primary font-semibold">160 spots left</span>
+                <span>363 claimed</span>
+                <span className="text-primary font-semibold">137 spots left</span>
               </div>
               <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
-                <div className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full" style={{ width: "68%" }} />
+                <div className="h-full bg-gradient-to-r from-primary to-sky-400 rounded-full" style={{ width: "73%" }} />
               </div>
             </div>
 
